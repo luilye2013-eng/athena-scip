@@ -20,6 +20,52 @@ from supabase import create_client, Client
 import yfinance as yf
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 import httpx
+from pydantic import BaseModel
+from typing import Optional, List, Any, Dict
+from datetime import datetime
+
+# ============================================
+# Pydantic Response Models (Fix Swagger)
+# ============================================
+class EventResponse(BaseModel):
+    id: str
+    title: str
+    description: Optional[str] = None
+    event_type: str
+    severity: int
+    location_country: Optional[str] = None
+    location_city: Optional[str] = None
+    created_at: str
+    confidence_score: Optional[float] = None
+
+class RecommendationResponse(BaseModel):
+    id: str
+    action_type: str
+    urgency: str
+    commodity_id: Optional[str] = None
+    supplier_id: Optional[str] = None
+    estimated_cost_impact: Optional[float] = None
+
+class PriceResponse(BaseModel):
+    commodity_name: str
+    price_usd: float
+    unit: str
+    change_24h: float
+    source: str
+
+class CountryRiskResponse(BaseModel):
+    country: str
+    risk_score: int
+    risk_level: str
+    events: int
+    war: int
+    disaster: int
+
+class APIResponse(BaseModel):
+    success: bool
+    data: Optional[Any] = None
+    error: Optional[str] = None
+    timestamp: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
 
 # ============================================
 # Logging Setup
@@ -226,6 +272,29 @@ async def health_check():
         db_status = False
     return format_response({"status": "healthy" if db_status else "degraded", "database": db_status})
 
+@app.get("/")
+async def root():
+    return format_response({...})
+
+@app.get("/health")
+async def health_check():
+    return format_response({...})
+
+@app.get("/events", response_model=APIResponse)
+async def get_events(...):
+    # existing code
+
+@app.get("/recommendations", response_model=APIResponse)
+async def get_recommendations(...):
+    # existing code
+
+@app.get("/prices/live", response_model=APIResponse)
+async def get_live_prices():
+    # existing code
+
+@app.get("/country-risk/enhanced", response_model=APIResponse)
+async def get_country_risk():
+    # existing code
 # ============================================
 # Events Endpoints
 # ============================================
