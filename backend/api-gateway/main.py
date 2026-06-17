@@ -41,6 +41,12 @@ load_dotenv()
 # ============================================
 SUPABASE_URL = os.getenv("SUPABASE_URL", "https://catpprgdbvenutyyjqbx.supabase.co")
 SUPABASE_KEY = os.getenv("SUPABASE_ANON_KEY", "sb_publishable_ykiqckKEQw2m8XXvX4cGnQ_5ijzb7Py")
+logger.info(f"SUPABASE_URL: {SUPABASE_URL}")
+logger.info(f"SUPABASE_KEY exists: {SUPABASE_KEY is not None}")
+logger.info(f"SUPABASE_KEY length: {len(SUPABASE_KEY) if SUPABASE_KEY else 0}")
+if SUPABASE_KEY:
+    logger.info(f"SUPABASE_KEY first 20 chars: {SUPABASE_KEY[:20]}")
+    logger.info(f"SUPABASE_KEY repr: {repr(SUPABASE_KEY)}")
 SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
 CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:8080,http://127.0.0.1:8080").split(",")
 
@@ -142,6 +148,15 @@ class SupabaseClient:
 # Initialize Supabase Client
 # ============================================
 supabase_client = SupabaseClient(SUPABASE_URL, SUPABASE_KEY)
+try:
+    supabase_client = SupabaseClient(SUPABASE_URL, SUPABASE_KEY)
+    supabase = supabase_client.get_client()
+    logger.info("✅ Supabase client initialized successfully")
+except Exception as e:
+    logger.error(f"❌ Failed to initialize Supabase client: {e}")
+    logger.error(f"URL: {SUPABASE_URL}")
+    logger.error(f"Key length: {len(SUPABASE_KEY) if SUPABASE_KEY else 0}")
+    raise
 supabase = supabase_client.get_client()
 
 # ============================================
