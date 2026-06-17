@@ -1,23 +1,11 @@
-﻿# ============================================
-# Athena SCIP - Render Deployment Configuration
-# ============================================
-
-services:
-  # ============================================
-  # API Gateway Service
-  # ============================================
+﻿services:
   - type: web
-    name: athena-api
+    name: athena-scip-api
     runtime: python
     plan: free
-    repo: https://github.com/YOUR_USERNAME/athena-scip
-    branch: main
-    buildCommand: |
-      cd backend/api-gateway
-      pip install -r requirements.txt
-    startCommand: |
-      cd backend/api-gateway
-      uvicorn main:app --host 0.0.0.0 --port 8000
+    region: oregon
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn backend.api-gateway.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: SUPABASE_URL
         sync: false
@@ -26,59 +14,4 @@ services:
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
       - key: CORS_ORIGINS
-        value: https://athena-dashboard.onrender.com,https://athena-api.onrender.com
-      - key: ENVIRONMENT
-        value: production
-
-  # ============================================
-  # Event Ingestor (Cron Job - Runs Every 6 Hours)
-  # ============================================
-  - type: cron
-    name: athena-ingestor
-    runtime: python
-    schedule: "0 */6 * * *"  # Every 6 hours
-    buildCommand: |
-      cd backend/event-ingestor
-      pip install -r requirements.txt
-    startCommand: |
-      cd backend/event-ingestor
-      python main.py
-    envVars:
-      - key: SUPABASE_URL
-        sync: false
-      - key: SUPABASE_SERVICE_ROLE_KEY
-        sync: false
-
-  # ============================================
-  # Dashboard (Static Files)
-  # ============================================
-  - type: web
-    name: athena-dashboard
-    runtime: static
-    plan: free
-    buildCommand: echo "Static site ready"
-    staticPublishPath: ./dashboard
-    envVars:
-      - key: API_URL
-        value: https://athena-api.onrender.com
-      - key: REACT_APP_API_URL
-        value: https://athena-api.onrender.com
-
-  # ============================================
-  # Recommendation Engine (Cron Job - Runs Daily)
-  # ============================================
-  - type: cron
-    name: athena-recommender
-    runtime: python
-    schedule: "0 0 * * *"  # Daily at midnight
-    buildCommand: |
-      cd backend/recommender-svc
-      pip install -r requirements.txt
-    startCommand: |
-      cd backend/recommender-svc
-      python main.py
-    envVars:
-      - key: SUPABASE_URL
-        sync: false
-      - key: SUPABASE_SERVICE_ROLE_KEY
-        sync: false
+        value: "*"
