@@ -1,0 +1,354 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Athena SCIP - Events</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f2f5;
+            color: #1a2a3a;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1a2a3a 0%, #2c4a6e 100%);
+            color: white;
+            padding: 20px 30px;
+        }
+
+            .header h1 {
+                font-size: 1.6rem;
+                margin-bottom: 5px;
+            }
+
+        .nav {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .nav-btn {
+            background: rgba(255,255,255,0.15);
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+            .nav-btn:hover {
+                background: rgba(255,255,255,0.3);
+            }
+
+            .nav-btn.active {
+                background: white;
+                color: #2c4a6e;
+            }
+
+        .logout-btn {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            float: right;
+            margin-top: -50px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        .last-updated {
+            font-size: 12px;
+            color: #6b7280;
+            text-align: right;
+            margin-bottom: 20px;
+        }
+
+        .filters {
+            display: flex;
+            gap: 12px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 8px 20px;
+            border: 1px solid #d1d5db;
+            background: white;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+            .filter-btn:hover {
+                background: #e5e7eb;
+            }
+
+            .filter-btn.active {
+                background: #2c4a6e;
+                color: white;
+                border-color: #2c4a6e;
+            }
+
+        .refresh-btn {
+            background: #6b7280;
+            color: white;
+            border: none;
+            padding: 8px 24px;
+            border-radius: 30px;
+            cursor: pointer;
+        }
+
+        .severity-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .severity-5 {
+            background: #dc2626;
+            color: white;
+        }
+
+        .severity-4 {
+            background: #f97316;
+            color: white;
+        }
+
+        .severity-3 {
+            background: #eab308;
+            color: black;
+        }
+
+        .severity-2 {
+            background: #86efac;
+            color: black;
+        }
+
+        .severity-1 {
+            background: #86efac;
+            color: black;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            border-radius: 12px;
+            margin-top: 15px;
+        }
+
+        .events-table {
+            width: 100%;
+            background: white;
+            border-collapse: collapse;
+            font-size: 13px;
+            min-width: 600px;
+            border-radius: 12px;
+        }
+
+            .events-table th, .events-table td {
+                padding: 12px 10px;
+                text-align: left;
+                border-bottom: 1px solid #e5e7eb;
+                vertical-align: top;
+            }
+
+            .events-table th {
+                background: #f8fafc;
+                font-weight: 600;
+            }
+
+        .stats-summary {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+            .stats-summary span {
+                font-weight: 700;
+                color: #2c4a6e;
+                font-size: 18px;
+            }
+
+        .location-unknown {
+            color: #f97316;
+            font-style: italic;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6b7280;
+        }
+
+        .disclaimer {
+            background: #fef3c7;
+            color: #92400e;
+            border-left: 4px solid #f59e0b;
+            padding: 12px 16px;
+            margin-top: 24px;
+            border-radius: 8px;
+            font-size: 12px;
+        }
+
+        @media (max-width: 768px) {
+            .events-table th, .events-table td {
+                font-size: 11px;
+                padding: 8px;
+            }
+
+            .stats-summary {
+                font-size: 12px;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div>
+            <h1>📊 Athena SCIP</h1>
+            <p>Disruption Events</p>
+            <div id="userInfo" style="font-size: 12px;">Loading...</div>
+        </div>
+        <button class="logout-btn" id="logoutBtn">🚪 Logout</button>
+        <div class="nav">
+            <button class="nav-btn" onclick="location.href='index.html'">🏠 Home</button>
+            <button class="nav-btn" onclick="location.href='recommendations.html'">🎯 Recommendations</button>
+            <button class="nav-btn active" onclick="location.href='events.html'">📋 Events</button>
+            <button class="nav-btn" onclick="location.href='analytics.html'">📈 Analytics</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div id="lastUpdated" class="last-updated">Loading events...</div>
+        <div class="stats-summary" id="eventStats">Loading statistics...</div>
+        <div class="filters">
+            <button class="filter-btn active" data-filter="all">All Events</button>
+            <button class="filter-btn" data-filter="war">War & Conflict</button>
+            <button class="filter-btn" data-filter="natural_disaster">Natural Disasters</button>
+            <button class="filter-btn" data-filter="strike">Strikes & Protests</button>
+            <button class="refresh-btn" id="refreshBtn">🔄 Refresh</button>
+        </div>
+        <div id="eventsContainer">Loading events...</div>
+        <div class="disclaimer" style="background: #fef3c7; color: #92400e; border-left: 4px solid #f59e0b; padding: 12px 16px; margin-top: 24px; border-radius: 8px; font-size: 12px;">
+            ⚠️ <strong>Data Accuracy Notice:</strong> Location data is sourced from event metadata. When location is not provided by the source, it is marked as "Location not provided by source". Athena SCIP does not infer or guess locations to ensure data accuracy.
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://catpprgdbvenutyyjqbx.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_ykiqckKEQw2m8XXvX4cGnQ_5ijzb7Py';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const API_URL = 'http://localhost:8000';
+
+        let currentFilter = 'all';
+
+        // FACT-BASED country display - NO GUESSING
+        function getCountryDisplay(event) {
+            const country = event.location_country;
+
+            // Only use explicitly provided location data
+            if (country && country !== 'Unknown' && country !== 'Unspecified Location' && country !== 'N/A' && country !== 'null') {
+                return country;
+            }
+
+            // If the source provided a city but no country, show city with note
+            if (event.location_city && event.location_city !== 'Unknown') {
+                return `${event.location_city} (country unknown)`;
+            }
+
+            // Transparent "Unknown" - better than guessing incorrectly
+            return '<span class="location-unknown">📍 Location not provided by source</span>';
+        }
+
+        function getSeverityBadge(severity, eventType, title) {
+            const bgColors = { 5: '#dc2626', 4: '#f97316', 3: '#eab308', 2: '#86efac', 1: '#86efac' };
+            return `<span class="severity-badge" style="background: ${bgColors[severity] || '#6b7280'}; color: ${severity >= 3 ? 'white' : 'black'};">${severity}</span>`;
+        }
+
+        async function safeFetch(url) {
+            try {
+                const response = await fetch(url);
+                const result = await response.json();
+                if (result.success) return result.data;
+                return null;
+            } catch (error) { return null; }
+        }
+
+        async function checkAuth() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (!session) window.location.href = 'secure-login.html';
+            else document.getElementById('userInfo').innerHTML = `👤 ${session.user.email}`;
+        }
+
+        async function logout() { await supabaseClient.auth.signOut(); window.location.href = 'secure-login.html'; }
+
+        async function loadEvents() {
+            try {
+                let url = `${API_URL}/events?limit=150`;
+                if (currentFilter !== 'all') url += `&event_type=${currentFilter}`;
+                const data = await safeFetch(url);
+                const events = data?.events || [];
+
+                if (!events.length) { document.getElementById('eventsContainer').innerHTML = '<div class="loading">No events found</div>'; return; }
+
+                let html = '<div class="table-wrapper"><table class="events-table"><thead><tr>';
+                html += '<th>Event Title</th><th>Type</th><th>Severity</th><th>Location</th><th>Source</th><th>Date</th>';
+                html += '</tr></thead><tbody>';
+
+                for (let e of events.slice(0, 100)) {
+                    html += `<tr>
+                            <td style="word-break:break-word;">${e.title || 'N/A'}</td>
+                            <td>${e.event_type || 'N/A'}</td>
+                            <td>${getSeverityBadge(e.severity, e.event_type, e.title)}</span></td>
+                            <td>${getCountryDisplay(e)}</span></td>
+                            <td>${e.source || 'N/A'}</td>
+                            <td>${e.created_at ? new Date(e.created_at).toLocaleDateString() : 'N/A'}</td>
+                        </tr>`;
+                }
+                html += `</tbody></table></div>`;
+                document.getElementById('eventsContainer').innerHTML = html;
+
+                const summary = await safeFetch(`${API_URL}/events/summary`);
+                document.getElementById('eventStats').innerHTML = `<strong>📊 Summary:</strong> Total Events: <span>${summary?.total_events || 0}</span>`;
+                document.getElementById('lastUpdated').innerHTML = `Last updated: ${new Date().toLocaleString()}`;
+            } catch (e) { document.getElementById('eventsContainer').innerHTML = '<div class="loading">Error loading events</div>'; }
+        }
+
+        document.getElementById('logoutBtn').addEventListener('click', logout);
+        document.getElementById('refreshBtn').addEventListener('click', loadEvents);
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentFilter = btn.dataset.filter;
+                loadEvents();
+            });
+        });
+
+        checkAuth().then(() => { loadEvents(); setInterval(loadEvents, 30000); });
+    </script>
+</body>
+</html>

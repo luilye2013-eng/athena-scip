@@ -1,0 +1,384 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Athena SCIP - Recommendations</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f2f5;
+            color: #1a2a3a;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1a2a3a 0%, #2c4a6e 100%);
+            color: white;
+            padding: 20px 30px;
+        }
+
+            .header h1 {
+                font-size: 1.6rem;
+                margin-bottom: 5px;
+            }
+
+        .nav {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .nav-btn {
+            background: rgba(255,255,255,0.15);
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+            .nav-btn:hover {
+                background: rgba(255,255,255,0.3);
+            }
+
+            .nav-btn.active {
+                background: white;
+                color: #2c4a6e;
+            }
+
+        .logout-btn {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            float: right;
+            margin-top: -50px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        .last-updated {
+            font-size: 12px;
+            color: #6b7280;
+            text-align: right;
+            margin-bottom: 20px;
+        }
+
+        .two-columns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .rec-card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 4px solid #2c4a6e;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
+        .urgency-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            background: #dc2626;
+            color: white;
+        }
+
+        .rec-title {
+            font-size: 15px;
+            font-weight: 600;
+            margin: 12px 0 8px;
+        }
+
+        .commodities {
+            font-size: 13px;
+            color: #2c4a6e;
+            margin: 8px 0;
+        }
+
+        .action-list {
+            list-style: none;
+            margin-top: 12px;
+        }
+
+            .action-list li {
+                font-size: 13px;
+                padding: 6px 0 6px 20px;
+                position: relative;
+            }
+
+                .action-list li:before {
+                    content: "✓";
+                    position: absolute;
+                    left: 0;
+                    color: #10b981;
+                }
+
+        .supplier-card {
+            background: #f0fdf4;
+            border-radius: 16px;
+            padding: 20px;
+        }
+
+            .supplier-card h3 {
+                margin-bottom: 15px;
+                font-size: 16px;
+            }
+
+        .supplier-item {
+            padding: 10px 0;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 13px;
+        }
+
+        .scenario-card {
+            margin-top: 20px;
+            background: #eff6ff;
+            border-radius: 16px;
+            padding: 20px;
+        }
+
+        .scenario-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+            .scenario-btn:hover {
+                transform: translateY(-1px);
+            }
+
+        .scenario-result {
+            margin-top: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 12px;
+            display: none;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6b7280;
+        }
+
+        @media (max-width: 900px) {
+            .two-columns {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Disclaimer styling - HCI compliant with high contrast */
+        .disclaimer {
+            background: #fef3c7;
+            color: #92400e;
+            border-left: 4px solid #f59e0b;
+            padding: 14px 18px;
+            margin-top: 30px;
+            border-radius: 10px;
+            font-size: 13px;
+            line-height: 1.5;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+            .disclaimer strong {
+                color: #b45309;
+                font-weight: 700;
+            }
+
+            .disclaimer a {
+                color: #b45309;
+                text-decoration: underline;
+            }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div>
+            <h1>📊 Athena SCIP</h1>
+            <p>Intelligence Platform</p>
+            <div id="userInfo" style="font-size: 12px;">Loading...</div>
+        </div>
+        <button class="logout-btn" id="logoutBtn">🚪 Logout</button>
+        <div class="nav">
+            <button class="nav-btn" onclick="location.href='index.html'">🏠 Home</button>
+            <button class="nav-btn active" onclick="location.href='recommendations.html'">🎯 Recommendations</button>
+            <button class="nav-btn" onclick="location.href='events.html'">📋 Events</button>
+            <button class="nav-btn" onclick="location.href='analytics.html'">📈 Analytics</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div id="lastUpdated" class="last-updated">Loading recommendations...</div>
+        <div class="two-columns">
+            <div id="recContainer">Loading recommendations...</div>
+            <div id="supplierContainer" class="supplier-card"><h3>🔄 Supplier Diversification Options</h3><div>Loading...</div></div>
+        </div>
+
+        <div class="disclaimer" style="background: #fef3c7; color: #92400e; border-left: 4px solid #f59e0b; padding: 12px 16px; margin-top: 24px; border-radius: 8px; font-size: 12px;">
+            ⚠️ <strong>Recommendation Notice:</strong> Mitigation recommendations are generated based on event classification and severity. They are for informational purposes only. Always consult with supply chain professionals before making operational decisions.
+        </div>
+
+        <div class="scenario-card">
+            <h3>🎭 Scenario Simulation</h3>
+            <p>Simulate different disruption scenarios to see recommended actions:</p>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px;">
+                <button class="scenario-btn" onclick="simulateScenario('war', 'Ukraine')" style="background: #dc2626; color: white;">⚔️ War in Ukraine</button>
+                <button class="scenario-btn" onclick="simulateScenario('natural_disaster', 'Taiwan')" style="background: #f97316; color: white;">🌊 Earthquake in Taiwan</button>
+                <button class="scenario-btn" onclick="simulateScenario('strike', 'Germany')" style="background: #eab308; color: black;">🚫 Port Strike in Germany</button>
+                <button class="scenario-btn" onclick="simulateScenario('sanctions', 'Russia')" style="background: #2c4a6e; color: white;">📜 Sanctions on Russia</button>
+            </div>
+            <div id="scenarioResult" class="scenario-result"></div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://catpprgdbvenutyyjqbx.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_ykiqckKEQw2m8XXvX4cGnQ_5ijzb7Py';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const API_URL = 'http://localhost:8000';
+
+        async function safeFetch(url) {
+            try {
+                const response = await fetch(url);
+                const result = await response.json();
+                if (result.success) return result.data;
+                return null;
+            } catch (error) { return null; }
+        }
+
+        async function checkAuth() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (!session) window.location.href = 'secure-login.html';
+            else document.getElementById('userInfo').innerHTML = `👤 ${session.user.email}`;
+        }
+
+        async function logout() { await supabaseClient.auth.signOut(); window.location.href = 'secure-login.html'; }
+
+        async function loadRecommendations() {
+            const container = document.getElementById('recContainer');
+            container.innerHTML = '<div class="loading">Loading recommendations...</div>';
+            const data = await safeFetch(`${API_URL}/recommendations/improved?limit=6`);
+
+            if (!data?.recommendations?.length) {
+                container.innerHTML = '<div class="loading">No active recommendations. Run event ingestor first.</div>';
+                return;
+            }
+
+            let html = '';
+            for (let r of data.recommendations) {
+                html += `<div class="rec-card">
+                        <span class="urgency-badge">${r.urgency?.toUpperCase() || 'MONITOR'}</span>
+                        <div class="rec-title">📌 ${r.event_title?.substring(0, 100)}</div>
+                        <div class="commodities">📦 Affected: ${r.affected_commodities?.slice(0, 4).join(', ') || 'General'}</div>
+                        <ul class="action-list">${r.actions?.slice(0, 3).map(a => `<li>${a}</li>`).join('')}</ul>
+                    </div>`;
+            }
+            container.innerHTML = html;
+            document.getElementById('lastUpdated').innerHTML = `Last updated: ${new Date().toLocaleString()}`;
+        }
+
+        async function loadSuppliers() {
+            const container = document.getElementById('supplierContainer');
+            const data = await safeFetch(`${API_URL}/supplier/alternatives`);
+
+            if (!data?.alternatives?.length) {
+                container.innerHTML = '<h3>🔄 Supplier Options</h3><div>No alternatives available. Run SQL to populate supplier_alternatives table.</div>';
+                return;
+            }
+
+            let html = '';
+            for (let a of data.alternatives) {
+                html += `<div class="supplier-item">
+                        <strong>${a.commodity}</strong> from ${a.country}<br>
+                        → Alternative: <strong>${a.alternative_country}</strong><br>
+                        <span style="font-size:11px;">Lead time: ${a.lead_time_days} days | Cost: ${a.cost_difference_percent > 0 ? '+' : ''}${a.cost_difference_percent}%</span>
+                    </div>`;
+            }
+            container.innerHTML = `<h3>🔄 Supplier Options</h3>${html}`;
+        }
+
+        function simulateScenario(eventType, country) {
+            const resultDiv = document.getElementById('scenarioResult');
+            let recommendations = [];
+            let affectedCommodities = [];
+
+            if (eventType === 'war') {
+                affectedCommodities = ['Wheat', 'Natural Gas', 'Oil', 'Steel', 'Nickel'];
+                recommendations = [
+                    '🛡️ Activate business continuity plan for ' + country,
+                    '📦 Increase inventory buffer by 90 days for critical components',
+                    '🚢 Reroute shipments away from conflict zone via Cape of Good Hope',
+                    '🔄 Identify alternative suppliers in Southeast Asia or Americas',
+                    '📊 Monitor situation for escalation every 6 hours'
+                ];
+            } else if (eventType === 'natural_disaster') {
+                affectedCommodities = ['Semiconductors', 'Lithium', 'Electronics'];
+                recommendations = [
+                    '⚠️ Contact suppliers in ' + country + ' immediately for status',
+                    '📦 Expedite pending orders before logistics congestion',
+                    '🚛 Activate alternative transportation routes (air freight)',
+                    '📋 Review disaster recovery procedures',
+                    '🏭 Identify backup manufacturing facilities outside affected region'
+                ];
+            } else if (eventType === 'strike') {
+                affectedCommodities = ['Logistics', 'Manufactured Goods'];
+                recommendations = [
+                    '🚚 Reroute shipments to alternative ports (Rotterdam, Antwerp)',
+                    '📦 Increase inventory at distribution centers by 30 days',
+                    '🤝 Negotiate with alternative logistics providers',
+                    '📢 Communicate potential 7-14 day delays to customers',
+                    '🚛 Consider air freight for time-sensitive materials'
+                ];
+            } else if (eventType === 'sanctions') {
+                affectedCommodities = ['Oil', 'Gas', 'Technology'];
+                recommendations = [
+                    '⚖️ Review legal compliance for ' + country + ' related transactions',
+                    '🔄 Identify alternative sourcing countries (Kazakhstan, UAE)',
+                    '📦 Consider inventory stockpiling before sanctions take full effect',
+                    '🏭 Explore domestic supplier alternatives',
+                    '📊 Monitor regulatory updates daily'
+                ];
+            }
+
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = `
+                    <strong>🎭 Scenario: ${eventType.replace('_', ' ').toUpperCase()} in ${country}</strong><br><br>
+                    <strong>📦 Affected Commodities:</strong> ${affectedCommodities.join(', ')}<br><br>
+                    <strong>✅ Recommended Actions:</strong>
+                    <ul>${recommendations.map(r => `<li>${r}</li>`).join('')}</ul>
+                    <br>
+                    <strong>⏱️ Estimated Impact Timeline:</strong> Immediate to 14 days<br>
+                    <strong>💰 Estimated Cost Impact:</strong> +5-15% depending on commodity
+                `;
+        }
+
+        document.getElementById('logoutBtn').addEventListener('click', logout);
+        checkAuth().then(() => { loadRecommendations(); loadSuppliers(); setInterval(() => { loadRecommendations(); loadSuppliers(); }, 60000); });
+    </script>
+</body>
+</html>

@@ -1,0 +1,211 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Athena SCIP - Login</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a2a3a 0%, #2c4a6e 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .login-card {
+            background: white;
+            border-radius: 24px;
+            padding: 40px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+
+        h1 {
+            font-size: 28px;
+            color: #1a2a3a;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #6b7280;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        input {
+            width: 100%;
+            padding: 14px;
+            margin: 10px 0;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+            input:focus {
+                outline: none;
+                border-color: #2c4a6e;
+                box-shadow: 0 0 0 3px rgba(44,74,110,0.1);
+            }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: #2c4a6e;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background 0.2s;
+        }
+
+            button:hover {
+                background: #1a2a3a;
+            }
+
+            button:disabled {
+                background: #9ca3af;
+                cursor: not-allowed;
+            }
+
+        .error, .success {
+            padding: 12px;
+            border-radius: 12px;
+            font-size: 13px;
+            margin: 10px 0;
+            display: none;
+        }
+
+        .error {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .success {
+            background: #d1fae5;
+            color: #10b981;
+        }
+
+        .toggle {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 13px;
+        }
+
+            .toggle a {
+                color: #2c4a6e;
+                cursor: pointer;
+                text-decoration: underline;
+            }
+
+        .info {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 11px;
+            color: #9ca3af;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <h1>🔐 Athena SCIP</h1>
+        <div class="subtitle">Supply Chain Intelligence Platform</div>
+
+        <div id="errorMsg" class="error"></div>
+        <div id="successMsg" class="success"></div>
+
+        <input type="email" id="email" placeholder="Email address">
+        <input type="password" id="password" placeholder="Password">
+
+        <button id="actionBtn">Login</button>
+
+        <div class="toggle">
+            <a id="toggleLink">Create an account</a>
+        </div>
+        <div class="info">🔒 Secure authentication powered by Supabase</div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://catpprgdbvenutyyjqbx.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_ykiqckKEQw2m8XXvX4cGnQ_5ijzb7Py';
+        const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let isLogin = true;
+
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const actionBtn = document.getElementById('actionBtn');
+        const toggleLink = document.getElementById('toggleLink');
+        const errorDiv = document.getElementById('errorMsg');
+        const successDiv = document.getElementById('successMsg');
+
+        function showError(msg) { errorDiv.style.display = 'block'; errorDiv.textContent = msg; successDiv.style.display = 'none'; setTimeout(() => errorDiv.style.display = 'none', 5000); }
+        function showSuccess(msg) { successDiv.style.display = 'block'; successDiv.textContent = msg; errorDiv.style.display = 'none'; setTimeout(() => successDiv.style.display = 'none', 3000); }
+
+        async function handleAuth() {
+            const email = emailInput.value.trim();
+            const password = passwordInput.value;
+
+            if (!email || !password) return showError('Please enter email and password');
+
+            actionBtn.disabled = true;
+            actionBtn.textContent = isLogin ? 'Logging in...' : 'Creating account...';
+
+            if (isLogin) {
+                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+                if (error) showError('Login failed: ' + error.message);
+                else {
+                    showSuccess('Login successful! Redirecting...');
+                    localStorage.setItem('athena_user', JSON.stringify({ id: data.user.id, email: data.user.email }));
+                    setTimeout(() => window.location.href = 'index.html', 1000);
+                }
+            } else {
+                const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: email.split('@')[0] } } });
+                if (error) showError('Signup failed: ' + error.message);
+                else {
+                    showSuccess('Account created! Please login.');
+                    isLogin = true;
+                    actionBtn.textContent = 'Login';
+                    toggleLink.textContent = 'Create an account';
+                    passwordInput.value = '';
+                }
+            }
+            actionBtn.disabled = false;
+            actionBtn.textContent = isLogin ? 'Login' : 'Sign Up';
+        }
+
+        function toggleMode() {
+            isLogin = !isLogin;
+            actionBtn.textContent = isLogin ? 'Login' : 'Sign Up';
+            toggleLink.textContent = isLogin ? 'Create an account' : 'Back to login';
+            errorDiv.style.display = 'none';
+            successDiv.style.display = 'none';
+        }
+
+        async function checkSession() {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) window.location.href = 'index.html';
+        }
+
+        actionBtn.addEventListener('click', handleAuth);
+        toggleLink.addEventListener('click', toggleMode);
+        passwordInput.addEventListener('keypress', e => { if (e.key === 'Enter') handleAuth(); });
+
+        checkSession();
+    </script>
+</body>
+</html>
