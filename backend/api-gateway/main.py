@@ -18,6 +18,8 @@ from fastapi.exceptions import RequestValidationError
 from pydantic import BaseModel, Field
 from supabase import create_client, Client
 import yfinance as yf
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+import httpx
 
 # ============================================
 # Logging Setup
@@ -46,13 +48,101 @@ CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:8080,http://127.0.0.1
 SUPABASE_KEY_TO_USE = SUPABASE_SERVICE_KEY if SUPABASE_SERVICE_KEY else SUPABASE_KEY
 
 # ============================================
-# Supabase Client (Singleton)
+# Supabase Client Class (Directly in main.py)
 # ============================================
+class SupabaseClient:
+    """Thread-safe Supabase client with retry logic"""
 
-from models.supabase_client import SupabaseClient
+    _instance: Optional['SupabaseClient'] = None
+    _client: Optional[Client] = None
 
-supabase_client_instance = SupabaseClient(SUPABASE_URL, SUPABASE_KEY)
-supabase = supabase_client_instance._client
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
+    def __init__(self, url: str, key: str, max_retries: int = 3):
+        if self._client is None:
+            self.url = url
+            self.key = key
+            self.max_retries = max_retries
+            self._initialize_client()
+
+    def _initialize_client(self):
+        """Initialize the Supabase client with retry options"""
+        try:
+            self._client = create_client(self.url, self.key)
+            logger.info("Supabase client initialized successfully")
+        except Exception as e:
+            logger.error(f"Failed to initialize Supabase client: {e}")
+            raise
+
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=1, max=10),
+        retry=retry_if_exception_type((httpx.ReadTimeout, httpx.ConnectTimeout, httpx.ConnectError))
+    )
+    def query(self, table: str, operation: str, **kwargs) -> Any:
+        """
+        Execute a query with automatic retry on failure
+
+        Args:
+            table: Table name
+            operation: 'select', 'insert', 'update', 'delete'
+            **kwargs: Query parameters
+
+        Returns:
+            Query result
+        """
+        if not self._client:
+            self._initialize_client()
+
+        try:
+            query = self._client.table(table)
+
+            if operation == 'select':
+                result = query.select(kwargs.get('columns', '*'))
+                if kwargs.get('limit'):
+                    result = result.limit(kwargs['limit'])
+                if kwargs.get('offset'):
+                    result = result.offset(kwargs['offset'])
+                if kwargs.get('order_by'):
+                    result = result.order(kwargs['order_by'], desc=kwargs.get('desc', True))
+                if kwargs.get('filters'):
+                    for key, value in kwargs['filters'].items():
+                        result = result.eq(key, value)
+                return result.execute()
+
+            elif operation == 'insert':
+                return query.insert(kwargs.get('data', [])).execute()
+
+            elif operation == 'update':
+                return query.update(kwargs.get('data', {})).eq(kwargs.get('eq_field', 'id'), kwargs.get('eq_value')).execute()
+
+            elif operation == 'delete':
+                if kwargs.get('filters'):
+                    for key, value in kwargs['filters'].items():
+                        query = query.eq(key, value)
+                return query.delete().execute()
+
+            else:
+                raise ValueError(f"Unsupported operation: {operation}")
+
+        except Exception as e:
+            logger.error(f"Query failed: {e}")
+            raise
+
+    def get_client(self) -> Client:
+        """Return the underlying Supabase client"""
+        if not self._client:
+            self._initialize_client()
+        return self._client
+
+# ============================================
+# Initialize Supabase Client
+# ============================================
+supabase_client = SupabaseClient(SUPABASE_URL, SUPABASE_KEY)
+supabase = supabase_client.get_client()
 
 # ============================================
 # Pydantic Models (Validation)
@@ -206,22 +296,22 @@ async def get_improved_recommendations(limit: int = 6):
             country = event.get("location_country") or "unknown"
             if event_type == "war" and severity >= 4:
                 actions = [
-                    f"🛡️ Activate business continuity plan for {country}",
-                    f"📦 Increase inventory buffer by 60 days",
-                    "🚢 Reroute shipments away from conflict zone",
-                    "🔄 Identify alternative suppliers"
+                    f"Activate business continuity plan for {country}",
+                    f"Increase inventory buffer by 60 days",
+                    "Reroute shipments away from conflict zone",
+                    "Identify alternative suppliers"
                 ]
                 affected = ["Wheat", "Natural Gas", "Oil", "Steel"]
             elif event_type == "natural_disaster" and severity >= 4:
                 actions = [
-                    f"⚠️ Contact suppliers in {country} immediately",
-                    "📦 Expedite pending orders",
-                    "🚛 Activate alternative routes",
-                    "📋 Review disaster recovery"
+                    f"Contact suppliers in {country} immediately",
+                    "Expedite pending orders",
+                    "Activate alternative routes",
+                    "Review disaster recovery"
                 ]
                 affected = ["Semiconductors", "Lithium", "Wheat"]
             else:
-                actions = ["📊 Monitor situation", "📦 Review inventory", "🔄 Prepare alternatives"]
+                actions = ["Monitor situation", "Review inventory", "Prepare alternatives"]
                 affected = ["General"]
             recommendations.append({
                 "event_title": title[:100],
