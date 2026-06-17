@@ -1,6 +1,6 @@
 """
 Athena SCIP - API Gateway
-Supply Chain Intelligence Platform - Production Ready (Single File)
+Supply Chain Intelligence Platform - Production Ready
 """
 import logging
 import os
@@ -20,12 +20,31 @@ from supabase import create_client, Client
 import yfinance as yf
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 import httpx
-from pydantic import BaseModel
-from typing import Optional, List, Any, Dict
-from datetime import datetime
 
 # ============================================
-# Pydantic Response Models (Fix Swagger)
+# Logging Setup
+# ============================================
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+# ============================================
+# Configuration
+# ============================================
+load_dotenv()
+
+# ============================================
+# Configuration from Environment Variables
+# ============================================
+SUPABASE_URL = os.getenv("SUPABASE_URL", "https://catpprgdbvenutyyjqbx.supabase.co")
+SUPABASE_KEY = os.getenv("SUPABASE_ANON_KEY", "sb_publishable_ykiqckKEQw2m8XXvX4cGnQ_5ijzb7Py")
+SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:8080,http://127.0.0.1:8080").split(",")
+
+# ============================================
+# Pydantic Response Models
 # ============================================
 class EventResponse(BaseModel):
     id: str
@@ -68,39 +87,7 @@ class APIResponse(BaseModel):
     timestamp: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
 
 # ============================================
-# Logging Setup
-# ============================================
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
-
-# ============================================
-# Configuration
-# ============================================
-# Load environment variables
-load_dotenv()
-
-# ============================================
-# Configuration from Environment Variables
-# ============================================
-SUPABASE_URL = os.getenv("SUPABASE_URL", "https://catpprgdbvenutyyjqbx.supabase.co")
-SUPABASE_KEY = os.getenv("SUPABASE_ANON_KEY", "sb_publishable_ykiqckKEQw2m8XXvX4cGnQ_5ijzb7Py")
-logger.info(f"SUPABASE_URL: {SUPABASE_URL}")
-logger.info(f"SUPABASE_KEY exists: {SUPABASE_KEY is not None}")
-logger.info(f"SUPABASE_KEY length: {len(SUPABASE_KEY) if SUPABASE_KEY else 0}")
-if SUPABASE_KEY:
-    logger.info(f"SUPABASE_KEY first 20 chars: {SUPABASE_KEY[:20]}")
-    logger.info(f"SUPABASE_KEY repr: {repr(SUPABASE_KEY)}")
-SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
-CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:8080,http://127.0.0.1:8080").split(",")
-
-# Use service key for admin operations if available
-SUPABASE_KEY_TO_USE = SUPABASE_SERVICE_KEY if SUPABASE_SERVICE_KEY else SUPABASE_KEY
-
-# ============================================
-# Supabase Client Class (Directly in main.py)
+# Supabase Client Class
 # ============================================
 class SupabaseClient:
     """Thread-safe Supabase client with retry logic"""
@@ -135,17 +122,7 @@ class SupabaseClient:
         retry=retry_if_exception_type((httpx.ReadTimeout, httpx.ConnectTimeout, httpx.ConnectError))
     )
     def query(self, table: str, operation: str, **kwargs) -> Any:
-        """
-        Execute a query with automatic retry on failure
-
-        Args:
-            table: Table name
-            operation: 'select', 'insert', 'update', 'delete'
-            **kwargs: Query parameters
-
-        Returns:
-            Query result
-        """
+        """Execute a query with automatic retry on failure"""
         if not self._client:
             self._initialize_client()
 
@@ -193,7 +170,6 @@ class SupabaseClient:
 # ============================================
 # Initialize Supabase Client
 # ============================================
-supabase_client = SupabaseClient(SUPABASE_URL, SUPABASE_KEY)
 try:
     supabase_client = SupabaseClient(SUPABASE_URL, SUPABASE_KEY)
     supabase = supabase_client.get_client()
@@ -203,16 +179,6 @@ except Exception as e:
     logger.error(f"URL: {SUPABASE_URL}")
     logger.error(f"Key length: {len(SUPABASE_KEY) if SUPABASE_KEY else 0}")
     raise
-supabase = supabase_client.get_client()
-
-# ============================================
-# Pydantic Models (Validation)
-# ============================================
-class EventFilter(BaseModel):
-    event_type: Optional[str] = Field(None, description="Filter by event type")
-    min_severity: Optional[int] = Field(None, ge=1, le=5)
-    limit: int = Field(100, ge=1, le=500)
-    offset: int = Field(0, ge=0)
 
 # ============================================
 # FastAPI Application
@@ -272,33 +238,10 @@ async def health_check():
         db_status = False
     return format_response({"status": "healthy" if db_status else "degraded", "database": db_status})
 
-@app.get("/")
-async def root():
-    return format_response({...})
-
-@app.get("/health")
-async def health_check():
-    return format_response({...})
-
-@app.get("/events", response_model=APIResponse)
-async def get_events(...):
-    # existing code
-
-@app.get("/recommendations", response_model=APIResponse)
-async def get_recommendations(...):
-    # existing code
-
-@app.get("/prices/live", response_model=APIResponse)
-async def get_live_prices():
-    # existing code
-
-@app.get("/country-risk/enhanced", response_model=APIResponse)
-async def get_country_risk():
-    # existing code
 # ============================================
 # Events Endpoints
 # ============================================
-@app.get("/events")
+@app.get("/events", response_model=APIResponse)
 async def get_events(
     event_type: Optional[str] = None,
     min_severity: Optional[int] = None,
@@ -345,7 +288,7 @@ async def get_commodities():
 # ============================================
 # Recommendations Endpoints
 # ============================================
-@app.get("/recommendations")
+@app.get("/recommendations", response_model=APIResponse)
 async def get_recommendations(limit: int = 50):
     try:
         result = supabase.table("recommendations").select("*, events(*)").order("created_at", desc=True).limit(limit).execute()
@@ -444,7 +387,7 @@ async def get_weather_alerts(severity_min: Optional[int] = None):
 # ============================================
 # Commodity Prices (Live)
 # ============================================
-@app.get("/prices/live")
+@app.get("/prices/live", response_model=APIResponse)
 async def get_live_prices():
     try:
         result = supabase.table("live_commodity_prices").select("*").order("recorded_at", desc=True).execute()
@@ -497,7 +440,7 @@ async def get_live_prices_comprehensive():
 # ============================================
 # Country Risk & Trends
 # ============================================
-@app.get("/country-risk/enhanced")
+@app.get("/country-risk/enhanced", response_model=APIResponse)
 async def get_country_risk():
     try:
         events = supabase.table("events").select("location_country, event_type, severity").execute()
