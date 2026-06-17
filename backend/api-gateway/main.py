@@ -62,7 +62,7 @@ class SupabaseClient:
     def get_client(self) -> Client:
         return self.client
 
-supabase = SupabaseClient().get_client()
+supabase = SupabaseClient(SUPABASE_URL, SUPABASE_KEY).get_client()
 
 # ============================================
 # Pydantic Models (Validation)
