@@ -14,7 +14,6 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Depends, Request, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
-from fastapi.exceptions import RequestValidationError
 from pydantic import BaseModel, Field
 from supabase import create_client, Client
 import yfinance as yf
@@ -36,7 +35,7 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 # ============================================
-# Configuration from Environment Variables
+# Environment Variables
 # ============================================
 SUPABASE_URL = os.getenv("SUPABASE_URL", "https://catpprgdbvenutyyjqbx.supabase.co")
 SUPABASE_KEY = os.getenv("SUPABASE_ANON_KEY", "sb_publishable_ykiqckKEQw2m8XXvX4cGnQ_5ijzb7Py")
@@ -44,7 +43,7 @@ SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
 CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:8080,http://127.0.0.1:8080").split(",")
 
 # ============================================
-# Pydantic Response Models
+# Pydantic Models (for Swagger Documentation)
 # ============================================
 class EventResponse(BaseModel):
     id: str
@@ -64,6 +63,7 @@ class RecommendationResponse(BaseModel):
     commodity_id: Optional[str] = None
     supplier_id: Optional[str] = None
     estimated_cost_impact: Optional[float] = None
+    event_title: Optional[str] = None
 
 class PriceResponse(BaseModel):
     commodity_name: str
@@ -80,18 +80,16 @@ class CountryRiskResponse(BaseModel):
     war: int
     disaster: int
 
-class APIResponse(BaseModel):
+class StandardResponse(BaseModel):
     success: bool
     data: Optional[Any] = None
     error: Optional[str] = None
     timestamp: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
 
 # ============================================
-# Supabase Client Class
+# Supabase Client
 # ============================================
 class SupabaseClient:
-    """Thread-safe Supabase client with retry logic"""
-
     _instance: Optional['SupabaseClient'] = None
     _client: Optional[Client] = None
 
@@ -108,7 +106,6 @@ class SupabaseClient:
             self._initialize_client()
 
     def _initialize_client(self):
-        """Initialize the Supabase client with retry options"""
         try:
             self._client = create_client(self.url, self.key)
             logger.info("Supabase client initialized successfully")
@@ -122,7 +119,6 @@ class SupabaseClient:
         retry=retry_if_exception_type((httpx.ReadTimeout, httpx.ConnectTimeout, httpx.ConnectError))
     )
     def query(self, table: str, operation: str, **kwargs) -> Any:
-        """Execute a query with automatic retry on failure"""
         if not self._client:
             self._initialize_client()
 
@@ -162,13 +158,12 @@ class SupabaseClient:
             raise
 
     def get_client(self) -> Client:
-        """Return the underlying Supabase client"""
         if not self._client:
             self._initialize_client()
         return self._client
 
 # ============================================
-# Initialize Supabase Client
+# Initialize Supabase
 # ============================================
 try:
     supabase_client = SupabaseClient(SUPABASE_URL, SUPABASE_KEY)
@@ -176,12 +171,10 @@ try:
     logger.info("✅ Supabase client initialized successfully")
 except Exception as e:
     logger.error(f"❌ Failed to initialize Supabase client: {e}")
-    logger.error(f"URL: {SUPABASE_URL}")
-    logger.error(f"Key length: {len(SUPABASE_KEY) if SUPABASE_KEY else 0}")
     raise
 
 # ============================================
-# FastAPI Application
+# FastAPI App
 # ============================================
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -194,23 +187,21 @@ app = FastAPI(
     description="Supply Chain Intelligence Platform",
     version="2.0.0",
     lifespan=lifespan,
-    docs_url="/docs"
+    docs_url="/docs",
+    redoc_url="/redoc"
 )
 
-# ============================================
-# CORS Configuration
-# ============================================
+# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type", "Accept"],
-    max_age=3600,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # ============================================
-# Helper Functions
+# Helper Function
 # ============================================
 def format_response(data: Any = None, error: str = None) -> dict:
     if error:
@@ -218,7 +209,7 @@ def format_response(data: Any = None, error: str = None) -> dict:
     return {"success": True, "data": data, "timestamp": datetime.utcnow().isoformat()}
 
 # ============================================
-# Root & Health Endpoints
+# Root & Health
 # ============================================
 @app.get("/")
 async def root():
@@ -236,12 +227,15 @@ async def health_check():
     except Exception as e:
         logger.error(f"Health check failed: {e}")
         db_status = False
-    return format_response({"status": "healthy" if db_status else "degraded", "database": db_status})
+    return format_response({
+        "status": "healthy" if db_status else "degraded",
+        "database": db_status
+    })
 
 # ============================================
 # Events Endpoints
 # ============================================
-@app.get("/events", response_model=APIResponse)
+@app.get("/events")
 async def get_events(
     event_type: Optional[str] = None,
     min_severity: Optional[int] = None,
@@ -275,7 +269,7 @@ async def get_events_summary():
         return format_response(error=str(e))
 
 # ============================================
-# Commodities Endpoint
+# Commodities
 # ============================================
 @app.get("/commodities")
 async def get_commodities():
@@ -286,9 +280,9 @@ async def get_commodities():
         return format_response(error=str(e))
 
 # ============================================
-# Recommendations Endpoints
+# Recommendations
 # ============================================
-@app.get("/recommendations", response_model=APIResponse)
+@app.get("/recommendations")
 async def get_recommendations(limit: int = 50):
     try:
         result = supabase.table("recommendations").select("*, events(*)").order("created_at", desc=True).limit(limit).execute()
@@ -360,7 +354,7 @@ async def get_supplier_alternatives():
         return format_response({"alternatives": []})
 
 # ============================================
-# Shipping & Weather Endpoints
+# Shipping & Weather
 # ============================================
 @app.get("/shipping/disruptions")
 async def get_shipping_disruptions(status: Optional[str] = None):
@@ -385,9 +379,9 @@ async def get_weather_alerts(severity_min: Optional[int] = None):
         return format_response(error=str(e))
 
 # ============================================
-# Commodity Prices (Live)
+# Prices
 # ============================================
-@app.get("/prices/live", response_model=APIResponse)
+@app.get("/prices/live")
 async def get_live_prices():
     try:
         result = supabase.table("live_commodity_prices").select("*").order("recorded_at", desc=True).execute()
@@ -427,6 +421,7 @@ async def get_live_prices_comprehensive():
                 })
         except Exception as e:
             logger.error(f"Error fetching {name}: {e}")
+    
     static_prices = [
         {"commodity_name": "Steel", "price_usd": 847.50, "unit": "per ton", "change_24h": -0.8, "source": "Static"},
         {"commodity_name": "Semiconductors", "price_usd": 1248.00, "unit": "per wafer", "change_24h": -0.2, "source": "Static"},
@@ -438,9 +433,9 @@ async def get_live_prices_comprehensive():
     return format_response({"prices": prices, "count": len(prices)})
 
 # ============================================
-# Country Risk & Trends
+# Country Risk
 # ============================================
-@app.get("/country-risk/enhanced", response_model=APIResponse)
+@app.get("/country-risk/enhanced")
 async def get_country_risk():
     try:
         events = supabase.table("events").select("location_country, event_type, severity").execute()
@@ -459,6 +454,7 @@ async def get_country_risk():
                 country_data[country]["war_count"] += 1
             elif event_type == "natural_disaster":
                 country_data[country]["disaster_count"] += 1
+        
         result = []
         for country, data in country_data.items():
             risk_score = min(100, (data["severity_sum"] * 2) + (data["war_count"] * 20))
@@ -477,6 +473,9 @@ async def get_country_risk():
         logger.error(f"Country risk error: {e}")
         return format_response(error=str(e))
 
+# ============================================
+# Trends
+# ============================================
 @app.get("/trends/prices")
 async def get_price_trends(days: int = 14):
     try:
@@ -519,6 +518,9 @@ async def get_risk_trends(days: int = 14):
         logger.error(f"Risk trends error: {e}")
         return format_response({"trends": {}})
 
+# ============================================
+# Export CSV
+# ============================================
 @app.get("/events/export/csv")
 async def export_events_csv(event_type: Optional[str] = None, limit: int = 1000):
     try:
@@ -529,12 +531,14 @@ async def export_events_csv(event_type: Optional[str] = None, limit: int = 1000)
         events = result.data
         if not events:
             return JSONResponse(status_code=404, content={"error": "No events to export"})
+        
         output = io.StringIO()
         writer = csv.writer(output)
         headers = ["id", "title", "event_type", "severity", "location_country", "location_city", "source", "created_at"]
         writer.writerow(headers)
         for event in events:
             writer.writerow([event.get(k, "") for k in headers])
+        
         response = StreamingResponse(iter([output.getvalue()]), media_type="text/csv")
         response.headers["Content-Disposition"] = f"attachment; filename=events_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.csv"
         return response
