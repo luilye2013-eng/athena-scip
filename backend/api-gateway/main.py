@@ -7,7 +7,7 @@ import os
 import csv
 import io
 from datetime import datetime
-from typing import Optional, List, Dict, Any
+from typing import Optional
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 from fastapi import FastAPI, Query
@@ -40,15 +40,15 @@ CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:8080,http://127.0.0.1
 # Supabase Client
 # ============================================
 class SupabaseClient:
-    _instance: Optional['SupabaseClient'] = None
-    _client: Optional[Client] = None
+    _instance = None
+    _client = None
 
     def __new__(cls, *args, **kwargs):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __init__(self, url: str, key: str, max_retries: int = 3):
+    def __init__(self, url, key, max_retries=3):
         if self._client is None:
             self.url = url
             self.key = key
@@ -68,7 +68,7 @@ class SupabaseClient:
         wait=wait_exponential(multiplier=1, min=1, max=10),
         retry=retry_if_exception_type((httpx.ReadTimeout, httpx.ConnectTimeout, httpx.ConnectError))
     )
-    def get_client(self) -> Client:
+    def get_client(self):
         if not self._client:
             self._initialize_client()
         return self._client
@@ -102,9 +102,7 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
-# ============================================
 # CORS
-# ============================================
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
@@ -116,7 +114,7 @@ app.add_middleware(
 # ============================================
 # Helper Function
 # ============================================
-def format_response(data=None, error: str = None) -> dict:
+def format_response(data=None, error=None):
     if error:
         return {"success": False, "error": error, "timestamp": datetime.utcnow().isoformat()}
     return {"success": True, "data": data, "timestamp": datetime.utcnow().isoformat()}
