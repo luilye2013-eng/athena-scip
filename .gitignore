@@ -42,3 +42,8 @@ htmlcov/
 
 # Node
 node_modules/
+
+*.bak
+*_backup.py
+__pycache__/
+*.pyc

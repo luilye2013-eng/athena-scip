@@ -10,24 +10,13 @@ from datetime import datetime
 from typing import Optional, List, Dict, Any
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
-from fastapi import FastAPI, Query, HTTPException
+from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 from supabase import create_client, Client
 import yfinance as yf
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 import httpx
-
-# Import Pydantic models
-from models import (
-    StandardResponse,
-    EventResponse,
-    EventsListResponse,
-    RecommendationResponse,
-    PriceResponse,
-    CountryRiskResponse,
-    HealthResponse
-)
 
 # ============================================
 # Logging Setup
@@ -106,18 +95,11 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Athena SCIP API Gateway",
-    description="Supply Chain Intelligence Platform - Monitor markets, identify risks, and get actionable recommendations",
+    description="Supply Chain Intelligence Platform",
     version="2.0.0",
     lifespan=lifespan,
     docs_url="/docs",
-    redoc_url="/redoc",
-    contact={
-        "name": "Athena SCIP Team",
-        "email": "support@athena-scip.com",
-    },
-    license_info={
-        "name": "Proprietary",
-    }
+    redoc_url="/redoc"
 )
 
 # CORS
@@ -130,38 +112,25 @@ app.add_middleware(
 )
 
 # ============================================
-# Helper Functions
+# Helper Function
 # ============================================
-def format_response(data: Any = None, error: str = None) -> StandardResponse:
-    """Create a properly formatted API response"""
+def format_response(data: Any = None, error: str = None) -> dict:
     if error:
-        return StandardResponse(success=False, error=error)
-    return StandardResponse(success=True, data=data)
+        return {"success": False, "error": error, "timestamp": datetime.utcnow().isoformat()}
+    return {"success": True, "data": data, "timestamp": datetime.utcnow().isoformat()}
 
 # ============================================
 # Root & Health
 # ============================================
-@app.get(
-    "/",
-    response_model=StandardResponse,
-    summary="API Root",
-    description="Returns API information and status"
-)
+@app.get("/")
 async def root():
     return format_response({
         "service": "Athena SCIP API Gateway",
         "version": "2.0.0",
-        "status": "operational",
-        "docs": "/docs",
-        "redoc": "/redoc"
+        "status": "operational"
     })
 
-@app.get(
-    "/health",
-    response_model=StandardResponse,
-    summary="Health Check",
-    description="Check API and database connectivity"
-)
+@app.get("/health")
 async def health_check():
     try:
         result = supabase.table("events").select("id", count="exact").limit(1).execute()
@@ -171,24 +140,18 @@ async def health_check():
         db_status = False
     return format_response({
         "status": "healthy" if db_status else "degraded",
-        "database": db_status,
-        "timestamp": datetime.utcnow().isoformat()
+        "database": db_status
     })
 
 # ============================================
 # Events
 # ============================================
-@app.get(
-    "/events",
-    response_model=StandardResponse,
-    summary="Get Events",
-    description="Retrieve events with optional filtering and pagination"
-)
+@app.get("/events")
 async def get_events(
-    event_type: Optional[str] = Query(None, description="Filter by event type (war, natural_disaster, strike, sanctions, pandemic, other)"),
-    min_severity: Optional[int] = Query(None, ge=1, le=5, description="Minimum severity level (1-5)"),
-    limit: int = Query(100, ge=1, le=500, description="Number of results to return"),
-    offset: int = Query(0, ge=0, description="Pagination offset")
+    event_type: Optional[str] = None,
+    min_severity: Optional[int] = None,
+    limit: int = 100,
+    offset: int = 0
 ):
     try:
         query = supabase.table("events").select("*").order("created_at", desc=True)
@@ -208,31 +171,18 @@ async def get_events(
         logger.error(f"Events error: {e}")
         return format_response(error=str(e))
 
-@app.get(
-    "/events/summary",
-    response_model=StandardResponse,
-    summary="Events Summary",
-    description="Get total count of events"
-)
+@app.get("/events/summary")
 async def get_events_summary():
     try:
         result = supabase.table("events").select("id", count="exact").execute()
-        return format_response({
-            "total_events": result.count or 0,
-            "timestamp": datetime.utcnow().isoformat()
-        })
+        return format_response({"total_events": result.count or 0})
     except Exception as e:
         return format_response(error=str(e))
 
 # ============================================
 # Commodities
 # ============================================
-@app.get(
-    "/commodities",
-    response_model=StandardResponse,
-    summary="Get Commodities",
-    description="Retrieve list of all commodities"
-)
+@app.get("/commodities")
 async def get_commodities():
     try:
         result = supabase.table("commodities").select("*").execute()
@@ -243,31 +193,15 @@ async def get_commodities():
 # ============================================
 # Recommendations
 # ============================================
-@app.get(
-    "/recommendations",
-    response_model=StandardResponse,
-    summary="Get Recommendations",
-    description="Retrieve supply chain risk recommendations"
-)
-async def get_recommendations(
-    limit: int = Query(50, ge=1, le=200, description="Number of recommendations to return")
-):
+@app.get("/recommendations")
+async def get_recommendations(limit: int = 50):
     try:
         result = supabase.table("recommendations").select("*, events(*)").order("created_at", desc=True).limit(limit).execute()
-        return format_response({
-            "recommendations": result.data,
-            "count": len(result.data),
-            "limit": limit
-        })
+        return format_response({"recommendations": result.data, "count": len(result.data)})
     except Exception as e:
         return format_response(error=str(e))
 
-@app.get(
-    "/recommendations/summary",
-    response_model=StandardResponse,
-    summary="Recommendations Summary",
-    description="Get summary of recommendations by urgency"
-)
+@app.get("/recommendations/summary")
 async def get_recommendations_summary():
     try:
         result = supabase.table("recommendations").select("urgency, id").execute()
@@ -282,15 +216,8 @@ async def get_recommendations_summary():
     except Exception as e:
         return format_response(error=str(e))
 
-@app.get(
-    "/recommendations/improved",
-    response_model=StandardResponse,
-    summary="Enhanced Recommendations",
-    description="Get AI-generated recommendations with mitigation actions"
-)
-async def get_improved_recommendations(
-    limit: int = Query(6, ge=1, le=20, description="Number of recommendations to return")
-):
+@app.get("/recommendations/improved")
+async def get_improved_recommendations(limit: int = 6):
     try:
         events = supabase.table("events").select("*").gte("severity", 3).order("severity", desc=True).limit(limit).execute()
         recommendations = []
@@ -299,7 +226,6 @@ async def get_improved_recommendations(
             severity = event.get("severity", 0)
             title = event.get("title", "")
             country = event.get("location_country") or "unknown"
-            
             if event_type == "war" and severity >= 4:
                 actions = [
                     f"Activate business continuity plan for {country}",
@@ -319,7 +245,6 @@ async def get_improved_recommendations(
             else:
                 actions = ["Monitor situation", "Review inventory", "Prepare alternatives"]
                 affected = ["General"]
-            
             recommendations.append({
                 "event_title": title[:100],
                 "severity": severity,
@@ -331,12 +256,7 @@ async def get_improved_recommendations(
     except Exception as e:
         return format_response(error=str(e))
 
-@app.get(
-    "/supplier/alternatives",
-    response_model=StandardResponse,
-    summary="Supplier Alternatives",
-    description="Get alternative supplier recommendations"
-)
+@app.get("/supplier/alternatives")
 async def get_supplier_alternatives():
     try:
         result = supabase.table("supplier_alternatives").select("*").execute()
@@ -347,15 +267,8 @@ async def get_supplier_alternatives():
 # ============================================
 # Shipping & Weather
 # ============================================
-@app.get(
-    "/shipping/disruptions",
-    response_model=StandardResponse,
-    summary="Shipping Disruptions",
-    description="Get shipping route disruptions"
-)
-async def get_shipping_disruptions(
-    status: Optional[str] = Query(None, description="Filter by status")
-):
+@app.get("/shipping/disruptions")
+async def get_shipping_disruptions(status: Optional[str] = None):
     try:
         query = supabase.table("shipping_disruptions").select("*").order("severity", desc=True)
         if status:
@@ -365,15 +278,8 @@ async def get_shipping_disruptions(
     except Exception as e:
         return format_response(error=str(e))
 
-@app.get(
-    "/weather/alerts",
-    response_model=StandardResponse,
-    summary="Weather Alerts",
-    description="Get severe weather alerts"
-)
-async def get_weather_alerts(
-    severity_min: Optional[int] = Query(None, ge=1, le=5, description="Minimum severity level")
-):
+@app.get("/weather/alerts")
+async def get_weather_alerts(severity_min: Optional[int] = None):
     try:
         query = supabase.table("weather_alerts").select("*").order("severity", desc=True)
         if severity_min:
@@ -386,12 +292,7 @@ async def get_weather_alerts(
 # ============================================
 # Prices
 # ============================================
-@app.get(
-    "/prices/live",
-    response_model=StandardResponse,
-    summary="Live Prices",
-    description="Get latest commodity prices from Supabase"
-)
+@app.get("/prices/live")
 async def get_live_prices():
     try:
         result = supabase.table("live_commodity_prices").select("*").order("recorded_at", desc=True).execute()
@@ -403,12 +304,7 @@ async def get_live_prices():
     except Exception as e:
         return format_response(error=str(e))
 
-@app.get(
-    "/prices/live-comprehensive",
-    response_model=StandardResponse,
-    summary="Comprehensive Live Prices",
-    description="Get live commodity prices from Yahoo Finance with static fallback"
-)
+@app.get("/prices/live-comprehensive")
 async def get_live_prices_comprehensive():
     tickers = {
         'Crude Oil': 'CL=F', 'Natural Gas': 'NG=F', 'Gold': 'GC=F',
@@ -450,12 +346,7 @@ async def get_live_prices_comprehensive():
 # ============================================
 # Country Risk
 # ============================================
-@app.get(
-    "/country-risk/enhanced",
-    response_model=StandardResponse,
-    summary="Country Risk Analysis",
-    description="Get comprehensive country risk scores based on events"
-)
+@app.get("/country-risk/enhanced")
 async def get_country_risk():
     try:
         events = supabase.table("events").select("location_country, event_type, severity").execute()
@@ -496,15 +387,8 @@ async def get_country_risk():
 # ============================================
 # Trends
 # ============================================
-@app.get(
-    "/trends/prices",
-    response_model=StandardResponse,
-    summary="Price Trends",
-    description="Get historical commodity price trends"
-)
-async def get_price_trends(
-    days: int = Query(14, ge=1, le=365, description="Number of days to analyze")
-):
+@app.get("/trends/prices")
+async def get_price_trends(days: int = 14):
     try:
         result = supabase.table("price_history").select("*").limit(100).execute()
         trends = {}
@@ -524,15 +408,8 @@ async def get_price_trends(
         logger.error(f"Price trends error: {e}")
         return format_response({"trends": {}})
 
-@app.get(
-    "/trends/risk",
-    response_model=StandardResponse,
-    summary="Risk Trends",
-    description="Get historical country risk trends"
-)
-async def get_risk_trends(
-    days: int = Query(14, ge=1, le=365, description="Number of days to analyze")
-):
+@app.get("/trends/risk")
+async def get_risk_trends(days: int = 14):
     try:
         result = supabase.table("risk_history").select("*").limit(100).execute()
         trends = {}
@@ -555,15 +432,8 @@ async def get_risk_trends(
 # ============================================
 # Export CSV
 # ============================================
-@app.get(
-    "/events/export/csv",
-    summary="Export Events CSV",
-    description="Export events data as CSV file"
-)
-async def export_events_csv(
-    event_type: Optional[str] = Query(None, description="Filter by event type"),
-    limit: int = Query(1000, ge=1, le=10000, description="Maximum number of events to export")
-):
+@app.get("/events/export/csv")
+async def export_events_csv(event_type: Optional[str] = None, limit: int = 1000):
     try:
         query = supabase.table("events").select("*").order("created_at", desc=True).limit(limit)
         if event_type:
