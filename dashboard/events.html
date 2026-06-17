@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -228,16 +228,16 @@
 <body>
     <div class="header">
         <div>
-            <h1>📊 Athena SCIP</h1>
+            <h1>?? Athena SCIP</h1>
             <p>Disruption Events</p>
             <div id="userInfo" style="font-size: 12px;">Loading...</div>
         </div>
-        <button class="logout-btn" id="logoutBtn">🚪 Logout</button>
+        <button class="logout-btn" id="logoutBtn">?? Logout</button>
         <div class="nav">
-            <button class="nav-btn" onclick="location.href='index.html'">🏠 Home</button>
-            <button class="nav-btn" onclick="location.href='recommendations.html'">🎯 Recommendations</button>
-            <button class="nav-btn active" onclick="location.href='events.html'">📋 Events</button>
-            <button class="nav-btn" onclick="location.href='analytics.html'">📈 Analytics</button>
+            <button class="nav-btn" onclick="location.href='index.html'">?? Home</button>
+            <button class="nav-btn" onclick="location.href='recommendations.html'">?? Recommendations</button>
+            <button class="nav-btn active" onclick="location.href='events.html'">?? Events</button>
+            <button class="nav-btn" onclick="location.href='analytics.html'">?? Analytics</button>
         </div>
     </div>
 
@@ -249,11 +249,11 @@
             <button class="filter-btn" data-filter="war">War & Conflict</button>
             <button class="filter-btn" data-filter="natural_disaster">Natural Disasters</button>
             <button class="filter-btn" data-filter="strike">Strikes & Protests</button>
-            <button class="refresh-btn" id="refreshBtn">🔄 Refresh</button>
+            <button class="refresh-btn" id="refreshBtn">?? Refresh</button>
         </div>
         <div id="eventsContainer">Loading events...</div>
         <div class="disclaimer" style="background: #fef3c7; color: #92400e; border-left: 4px solid #f59e0b; padding: 12px 16px; margin-top: 24px; border-radius: 8px; font-size: 12px;">
-            ⚠️ <strong>Data Accuracy Notice:</strong> Location data is sourced from event metadata. When location is not provided by the source, it is marked as "Location not provided by source". Athena SCIP does not infer or guess locations to ensure data accuracy.
+            ?? <strong>Data Accuracy Notice:</strong> Location data is sourced from event metadata. When location is not provided by the source, it is marked as "Location not provided by source". Athena SCIP does not infer or guess locations to ensure data accuracy.
         </div>
     </div>
 
@@ -261,7 +261,7 @@
         const SUPABASE_URL = 'https://catpprgdbvenutyyjqbx.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_ykiqckKEQw2m8XXvX4cGnQ_5ijzb7Py';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        const API_URL = 'http://localhost:8000';
+        const API_URL = 'https://athena-scip-api.onrender.com';
 
         let currentFilter = 'all';
 
@@ -280,7 +280,7 @@
             }
 
             // Transparent "Unknown" - better than guessing incorrectly
-            return '<span class="location-unknown">📍 Location not provided by source</span>';
+            return '<span class="location-unknown">?? Location not provided by source</span>';
         }
 
         function getSeverityBadge(severity, eventType, title) {
@@ -300,7 +300,7 @@
         async function checkAuth() {
             const { data: { session } } = await supabaseClient.auth.getSession();
             if (!session) window.location.href = 'secure-login.html';
-            else document.getElementById('userInfo').innerHTML = `👤 ${session.user.email}`;
+            else document.getElementById('userInfo').innerHTML = `?? ${session.user.email}`;
         }
 
         async function logout() { await supabaseClient.auth.signOut(); window.location.href = 'secure-login.html'; }
@@ -332,7 +332,7 @@
                 document.getElementById('eventsContainer').innerHTML = html;
 
                 const summary = await safeFetch(`${API_URL}/events/summary`);
-                document.getElementById('eventStats').innerHTML = `<strong>📊 Summary:</strong> Total Events: <span>${summary?.total_events || 0}</span>`;
+                document.getElementById('eventStats').innerHTML = `<strong>?? Summary:</strong> Total Events: <span>${summary?.total_events || 0}</span>`;
                 document.getElementById('lastUpdated').innerHTML = `Last updated: ${new Date().toLocaleString()}`;
             } catch (e) { document.getElementById('eventsContainer').innerHTML = '<div class="loading">Error loading events</div>'; }
         }

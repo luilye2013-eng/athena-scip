@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -187,16 +187,16 @@
 <body>
     <div class="header">
         <div>
-            <h1>📊 Athena SCIP</h1>
+            <h1>?? Athena SCIP</h1>
             <p>Analytics Dashboard</p>
             <div id="userInfo" style="font-size: 11px; margin-top: 4px;">Loading...</div>
         </div>
-        <button class="logout-btn" id="logoutBtn">🚪 Logout</button>
+        <button class="logout-btn" id="logoutBtn">?? Logout</button>
         <div class="nav">
-            <button class="nav-btn" onclick="location.href='index.html'">🏠 Home</button>
-            <button class="nav-btn" onclick="location.href='recommendations.html'">🎯 Recommendations</button>
-            <button class="nav-btn" onclick="location.href='events.html'">📋 Events</button>
-            <button class="nav-btn active" onclick="location.href='analytics.html'">📈 Analytics</button>
+            <button class="nav-btn" onclick="location.href='index.html'">?? Home</button>
+            <button class="nav-btn" onclick="location.href='recommendations.html'">?? Recommendations</button>
+            <button class="nav-btn" onclick="location.href='events.html'">?? Events</button>
+            <button class="nav-btn active" onclick="location.href='analytics.html'">?? Analytics</button>
         </div>
     </div>
 
@@ -212,15 +212,15 @@
 
         <div class="charts-grid">
             <div class="chart-card full-width">
-                <h3>📈 Daily Event Trends (Last 14 Days)</h3>
+                <h3>?? Daily Event Trends (Last 14 Days)</h3>
                 <canvas id="dailyChart"></canvas>
             </div>
             <div class="chart-card">
-                <h3>⚠️ Event Type Distribution</h3>
+                <h3>?? Event Type Distribution</h3>
                 <canvas id="typeChart"></canvas>
             </div>
             <div class="chart-card">
-                <h3>🌍 Top Affected Countries</h3>
+                <h3>?? Top Affected Countries</h3>
                 <canvas id="countryChart"></canvas>
             </div>
         </div>
@@ -230,7 +230,7 @@
         const SUPABASE_URL = 'https://catpprgdbvenutyyjqbx.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_ykiqckKEQw2m8XXvX4cGnQ_5ijzb7Py';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        const API_URL = 'http://localhost:8000';
+        const API_URL = 'https://athena-scip-api.onrender.com';
 
         let dailyChart = null, typeChart = null, countryChart = null;
 
@@ -249,7 +249,7 @@
         async function checkAuth() {
             const { data: { session } } = await supabaseClient.auth.getSession();
             if (!session) window.location.href = 'secure-login.html';
-            else document.getElementById('userInfo').innerHTML = `👤 ${session.user.email}`;
+            else document.getElementById('userInfo').innerHTML = `?? ${session.user.email}`;
         }
 
         async function logout() {
@@ -264,7 +264,7 @@
                 const events = eventsData?.events || [];
 
                 if (!events.length) {
-                    document.getElementById('statsGrid').innerHTML = '<div class="error">⚠️ No events found. Run event ingestor first.</div>';
+                    document.getElementById('statsGrid').innerHTML = '<div class="error">?? No events found. Run event ingestor first.</div>';
                     return;
                 }
 
@@ -389,7 +389,7 @@
 
             } catch (error) {
                 console.error('Analytics error:', error);
-                document.getElementById('statsGrid').innerHTML = `<div class="error">⚠️ Failed to load analytics: ${error.message}</div>`;
+                document.getElementById('statsGrid').innerHTML = `<div class="error">?? Failed to load analytics: ${error.message}</div>`;
             }
         }
 

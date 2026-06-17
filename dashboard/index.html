@@ -337,16 +337,16 @@
 <body>
     <div class="header">
         <div>
-            <h1>📊 Athena SCIP</h1>
+            <h1>?? Athena SCIP</h1>
             <p>Supply Chain Intelligence Platform</p>
             <div id="userInfo" style="font-size: 11px; margin-top: 4px;">Loading...</div>
         </div>
-        <button class="logout-btn" id="logoutBtn">🚪 Logout</button>
+        <button class="logout-btn" id="logoutBtn">?? Logout</button>
         <div class="nav">
-            <button class="nav-btn active" onclick="location.href='index.html'">🏠 Home</button>
-            <button class="nav-btn" onclick="location.href='recommendations.html'">🎯 Recommendations</button>
-            <button class="nav-btn" onclick="location.href='events.html'">📋 Events</button>
-            <button class="nav-btn" onclick="location.href='analytics.html'">📈 Analytics</button>
+            <button class="nav-btn active" onclick="location.href='index.html'">?? Home</button>
+            <button class="nav-btn" onclick="location.href='recommendations.html'">?? Recommendations</button>
+            <button class="nav-btn" onclick="location.href='events.html'">?? Events</button>
+            <button class="nav-btn" onclick="location.href='analytics.html'">?? Analytics</button>
         </div>
     </div>
 
@@ -365,15 +365,15 @@
         <!-- Three Columns -->
         <div class="three-columns">
             <div class="card">
-                <h3>🌡️ Weather Alerts</h3>
+                <h3>??? Weather Alerts</h3>
                 <div id="weatherContainer" class="scrollable">Loading...</div>
             </div>
             <div class="card">
-                <h3>🚢 Shipping Disruptions</h3>
+                <h3>?? Shipping Disruptions</h3>
                 <div id="shippingContainer" class="scrollable">Loading...</div>
             </div>
             <div class="card">
-                <h3>💰 Commodity Prices</h3>
+                <h3>?? Commodity Prices</h3>
                 <div id="pricesContainer" class="scrollable">Loading...</div>
             </div>
         </div>
@@ -381,18 +381,18 @@
         <!-- Two Columns for Charts -->
         <div class="two-columns">
             <div class="chart-card">
-                <h3>📈 Commodity Price Trends (14 Days)</h3>
+                <h3>?? Commodity Price Trends (14 Days)</h3>
                 <canvas id="priceTrendChart"></canvas>
             </div>
             <div class="chart-card">
-                <h3>⚠️ Risk Score Trends (14 Days)</h3>
+                <h3>?? Risk Score Trends (14 Days)</h3>
                 <canvas id="riskTrendChart"></canvas>
             </div>
         </div>
 
         <!-- Country Risk -->
         <div class="chart-card">
-            <h3>🌍 Country Risk Distribution</h3>
+            <h3>?? Country Risk Distribution</h3>
             <div class="two-columns" style="gap: 15px; margin-bottom: 0;">
                 <canvas id="riskPieChart" style="max-height: 200px;"></canvas>
                 <div id="countryRiskContainer" class="risk-grid" style="max-height: 200px; overflow-y: auto;">Loading...</div>
@@ -401,7 +401,7 @@
 
         <!-- Disclaimer -->
         <div class="disclaimer">
-            ⚠️ <strong>Data Accuracy Notice:</strong> All supply chain disruption data is sourced from third-party RSS feeds, APIs, and weather services. Athena SCIP does not modify or infer location data. Commodity prices are live from Yahoo Finance. For critical decisions, verify with primary sources.
+            ?? <strong>Data Accuracy Notice:</strong> All supply chain disruption data is sourced from third-party RSS feeds, APIs, and weather services. Athena SCIP does not modify or infer location data. Commodity prices are live from Yahoo Finance. For critical decisions, verify with primary sources.
         </div>
     </div>
 
@@ -409,7 +409,7 @@
         const SUPABASE_URL = 'https://catpprgdbvenutyyjqbx.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_ykiqckKEQw2m8XXvX4cGnQ_5ijzb7Py';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        const API_URL = 'http://localhost:8000';
+        const API_URL = 'https://athena-scip-api.onrender.com';
 
         let priceChart = null, riskChart = null, pieChart = null;
 
@@ -432,7 +432,7 @@
         async function checkAuth() {
             const { data: { session } } = await supabaseClient.auth.getSession();
             if (!session) window.location.href = 'secure-login.html';
-            else document.getElementById('userInfo').innerHTML = `👤 ${session.user.email}`;
+            else document.getElementById('userInfo').innerHTML = `?? ${session.user.email}`;
         }
 
         async function logout() {
@@ -463,7 +463,7 @@
                                     <span class="severity-badge severity-${a.severity}">${severityText}</span>
                                     <strong>${alertType}</strong>
                                 </div>
-                                <div style="font-size: 11px; color: #6b7280;">📍 ${location}</div>
+                                <div style="font-size: 11px; color: #6b7280;">?? ${location}</div>
                             </div>
                             <div id="${alertId}" class="weather-desc">${description}</div>
                         </div>`;
@@ -496,9 +496,9 @@
                             <div class="shipping-header">
                                 <strong>${route}</strong>
                                 <span class="severity-badge severity-${d.severity}">${severityText}</span>
-                                <span>⏱️ ${delay}d</span>
+                                <span>?? ${delay}d</span>
                             </div>
-                            <div style="font-size: 10px; color: #6b7280;">📌 ${type}</div>
+                            <div style="font-size: 10px; color: #6b7280;">?? ${type}</div>
                             <div class="shipping-desc">${desc.substring(0, 100)}${desc.length > 100 ? '...' : ''}</div>
                         </div>`;
                 }
@@ -520,7 +520,7 @@
                 let html = '';
                 for (let p of prices.slice(0, 12)) {
                     const change = p.change_24h || 0;
-                    const changeSymbol = change > 0 ? '▲' : (change < 0 ? '▼' : '●');
+                    const changeSymbol = change > 0 ? '?' : (change < 0 ? '?' : '?');
                     const color = change > 0 ? '#10b981' : (change < 0 ? '#dc2626' : '#6b7280');
                     html += `<div class="price-item">
                             <strong>${p.commodity_name}</strong>
