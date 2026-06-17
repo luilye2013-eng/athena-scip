@@ -13,6 +13,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.openapi.utils import get_openapi
 from supabase import create_client, Client
 import yfinance as yf
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
@@ -99,10 +100,51 @@ app = FastAPI(
     version="2.0.0",
     lifespan=lifespan,
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
+    openapi_url="/openapi.json"
 )
 
+# ============================================
+# Custom OpenAPI Generator (Fixes Pydantic v2 issue)
+# ============================================
+def custom_openapi():
+    """
+    Generate OpenAPI schema with proper handling of Pydantic v2 types.
+    This fixes the '_SpecialForm' error with Optional[Any] types.
+    """
+    if app.openapi_schema:
+        return app.openapi_schema
+    
+    # Generate the schema
+    openapi_schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        description=app.description,
+        routes=app.routes,
+    )
+    
+    # Clean up schemas to remove problematic types
+    if "components" in openapi_schema:
+        for schema_name, schema in openapi_schema["components"].get("schemas", {}).items():
+            if "properties" in schema:
+                for prop_name, prop in schema["properties"].items():
+                    # Replace empty schemas with proper types
+                    if prop == {}:
+                        prop["type"] = "object"
+                        prop["nullable"] = True
+                    # Handle Any type - convert to object
+                    if prop.get("type") == "object" and prop.get("additionalProperties") is None:
+                        prop["additionalProperties"] = True
+    
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+# Set the custom openapi function
+app.openapi = custom_openapi
+
+# ============================================
 # CORS
+# ============================================
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
