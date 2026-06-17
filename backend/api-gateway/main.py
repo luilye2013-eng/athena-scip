@@ -48,21 +48,11 @@ SUPABASE_KEY_TO_USE = SUPABASE_SERVICE_KEY if SUPABASE_SERVICE_KEY else SUPABASE
 # ============================================
 # Supabase Client (Singleton)
 # ============================================
-class SupabaseClient:
-    """Thread-safe Supabase client instance"""
-    _instance = None
-    
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-            cls._instance.client = create_client(SUPABASE_URL, SUPABASE_KEY)
-            logger.info("Supabase client initialized")
-        return cls._instance
-    
-    def get_client(self) -> Client:
-        return self.client
 
-supabase = SupabaseClient(SUPABASE_URL, SUPABASE_KEY).get_client()
+from models.supabase_client import SupabaseClient
+
+supabase_client_instance = SupabaseClient(SUPABASE_URL, SUPABASE_KEY)
+supabase = supabase_client_instance._client
 
 # ============================================
 # Pydantic Models (Validation)
