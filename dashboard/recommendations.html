@@ -51,6 +51,15 @@
                 <h4 id="scenarioTitle" style="color: #2c4a6e;"></h4>
                 <div id="scenarioContent"></div>
             </div>
+
+<div id="scenarioContainer" style="display: flex; gap: 10px; flex-wrap: wrap;">
+    <button onclick="runScenario('war')" class="btn-primary" style="background: #dc2626;">⚔️ War Disruption</button>
+    <button onclick="runScenario('natural_disaster')" class="btn-primary" style="background: #f97316;">🌊 Natural Disaster</button>
+    <button onclick="runScenario('strike')" class="btn-primary" style="background: #eab308;">⛔ Port Strike</button>
+    <button onclick="runScenario('sanctions')" class="btn-primary" style="background: #8b5cf6;">🚫 Sanctions</button>
+    <button onclick="runScenario('shipping')" class="btn-primary" style="background: #06b6d4;">🚢 Shipping Disruption</button>
+    <button onclick="runScenario('weather')" class="btn-primary" style="background: #14b8a6;">🌪️ Severe Weather</button>
+</div>
         </div>
 
         <!-- Disclaimer -->
@@ -59,132 +68,19 @@
         </div>
     </div>
 
+       <!-- External JavaScript -->
+    <script src="config.js"></script>
+    <script src="utils.js"></script>
+    <script src="recommendations.js"></script>
+    
     <script>
-        const supabaseClient = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
-        const API_URL = CONFIG.API_URL;
-
-        async function checkAuth() {
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            if (!session) window.location.href = 'secure-login.html';
-            else document.getElementById('userInfo').innerHTML = `👤 ${session.user.email}`;
-        }
-
-        document.getElementById('logoutBtn').addEventListener('click', async () => {
-            await supabaseClient.auth.signOut();
-            window.location.href = 'secure-login.html';
+        // Add scenario buttons
+        document.addEventListener('DOMContentLoaded', function() {
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn) logoutBtn.addEventListener('click', logout);
+            
+            // Scenario buttons are already defined in recommendations.js
         });
-
-        async function loadRecommendations() {
-            try {
-                const response = await fetch(`${API_URL}/recommendations/improved?limit=10`);
-                const result = await response.json();
-                const data = result.success ? result.data : null;
-                const recommendations = data?.recommendations || [];
-
-                if (!recommendations.length) {
-                    document.getElementById('recommendationsContainer').innerHTML = '<div class="card"><p>No recommendations available</p></div>';
-                    return;
-                }
-
-                let html = '';
-                for (let r of recommendations) {
-                    const urgencyClass = r.urgency === 'immediate' ? 'severity-5' : r.urgency === 'short_term' ? 'severity-4' : 'severity-2';
-                    const actions = r.actions || ['Monitor situation', 'Review inventory'];
-                    
-                    html += `<div class="card" style="margin-bottom: 15px; border-left: 4px solid ${r.urgency === 'immediate' ? '#dc2626' : r.urgency === 'short_term' ? '#f97316' : '#eab308'};">
-                        <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap;">
-                            <h3 style="color: ${r.urgency === 'immediate' ? '#dc2626' : r.urgency === 'short_term' ? '#f97316' : '#2c4a6e'}; margin-bottom: 8px;">
-                                ${r.urgency === 'immediate' ? '🚨 IMMEDIATE' : r.urgency === 'short_term' ? '⚡ SHORT TERM' : '📋 LONG TERM'}
-                            </h3>
-                            <span class="severity-badge ${urgencyClass}">Severity: ${r.severity || 2}</span>
-                        </div>
-                        <p style="font-weight: 500; margin-bottom: 8px;">${r.event_title || 'Recommendation'}</p>
-                        <p style="font-size: 13px; color: #4b5563; margin-bottom: 8px;">
-                            <strong>Affected:</strong> ${r.affected_commodities?.join(', ') || 'Various commodities'}
-                        </p>
-                        <div style="font-size: 13px;">
-                            <strong>Actions:</strong>
-                            <ul style="margin-top: 4px; padding-left: 20px;">
-                                ${actions.map(a => `<li>${a}</li>`).join('')}
-                            </ul>
-                        </div>
-                        ${r.supplier_alternatives ? `<div style="margin-top: 8px; font-size: 13px; background: #f1f5f9; padding: 10px; border-radius: 6px;">
-                            <strong>🔄 Supplier Options:</strong>
-                            ${r.supplier_alternatives}
-                        </div>` : ''}
-                    </div>`;
-                }
-                document.getElementById('recommendationsContainer').innerHTML = html;
-                document.getElementById('lastUpdated').innerHTML = `Last updated: ${new Date().toLocaleString()}`;
-
-            } catch (error) {
-                console.error('Recommendations error:', error);
-                document.getElementById('recommendationsContainer').innerHTML = '<div class="card"><p>Error loading recommendations</p></div>';
-            }
-        }
-
-        // Scenario Simulation
-        async function runScenario(type) {
-            const resultDiv = document.getElementById('scenarioResult');
-            const titleDiv = document.getElementById('scenarioTitle');
-            const contentDiv = document.getElementById('scenarioContent');
-            
-            resultDiv.style.display = 'block';
-            titleDiv.textContent = `⏳ Analyzing ${type.replace('_', ' ')} scenario...`;
-            contentDiv.innerHTML = 'Loading...';
-            
-            try {
-                const eventsResponse = await fetch(`${API_URL}/events?event_type=${type}&limit=10`);
-                const eventsData = await eventsResponse.json();
-                const events = eventsData.success ? eventsData.data.events : [];
-                
-                if (events.length === 0) {
-                    titleDiv.textContent = '⚠️ No data available for this scenario';
-                    contentDiv.innerHTML = 'There are no recent events of this type to simulate.';
-                    return;
-                }
-                
-                const commodities = ['Wheat', 'Natural Gas', 'Oil', 'Steel', 'Semiconductors'];
-                const affected = commodities.slice(0, Math.floor(Math.random() * 3) + 2);
-                
-                let html = `
-                    <div style="margin-bottom: 12px;">
-                        <strong>📋 Impact Analysis</strong>
-                        <ul style="margin-top: 6px; padding-left: 20px; font-size: 13px;">
-                            <li>Based on ${events.length} recent ${type.replace('_', ' ')} events</li>
-                            <li>Affected commodities: ${affected.join(', ')}</li>
-                            <li>Average severity: ${(events.reduce((sum, e) => sum + e.severity, 0) / events.length).toFixed(1)}/5</li>
-                        </ul>
-                    </div>
-                    <div style="margin-bottom: 12px;">
-                        <strong>💡 Recommended Actions</strong>
-                        <ul style="margin-top: 6px; padding-left: 20px; font-size: 13px;">
-                            <li>Activate business continuity plans for affected regions</li>
-                            <li>Increase inventory buffer by 30-60 days</li>
-                            <li>Identify alternative suppliers in stable regions</li>
-                            <li>Reroute shipments away from conflict zones</li>
-                        </ul>
-                    </div>
-                    <div>
-                        <strong>🔄 Supplier Alternatives</strong>
-                        <ul style="margin-top: 6px; padding-left: 20px; font-size: 13px;">
-                            <li>${affected[0] || 'Commodities'}: Alternative sources in Brazil, Australia</li>
-                            <li>${affected[1] || 'Commodities'}: Qatar, United States, Norway</li>
-                            <li>${affected[2] || 'Commodities'}: Saudi Arabia, UAE, Iraq</li>
-                        </ul>
-                    </div>
-                `;
-                
-                titleDiv.textContent = `📊 Scenario Analysis: ${type.replace('_', ' ')}`;
-                contentDiv.innerHTML = html;
-                
-            } catch (error) {
-                console.error('Scenario error:', error);
-                contentDiv.innerHTML = '❌ Error loading scenario data. Please try again.';
-            }
-        }
-
-        checkAuth().then(loadRecommendations);
     </script>
 </body>
 </html>
