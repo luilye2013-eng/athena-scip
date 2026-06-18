@@ -63,11 +63,14 @@ async function loadEvents() {
 
         html += `</tbody></table>`;
         document.getElementById('eventsContainer').innerHTML = html;
-        document.getElementById('lastUpdated').innerHTML = `Last updated: ${new Date().toLocaleString()}`;
+        const lastUpdated = document.getElementById('lastUpdated');
+if (lastUpdated) {
+    lastUpdated.innerHTML = `Last updated: ${new Date().toLocaleString()}`;
+}
 
     } catch (error) {
-        console.error('Events error:', error);
-        document.getElementById('eventsContainer').innerHTML = '<p>Error loading events</p>';
+    console.error('Events error:', error);
+    document.getElementById('eventsContainer').innerHTML = '<p>Error loading events</p>';
     }
 }
 
