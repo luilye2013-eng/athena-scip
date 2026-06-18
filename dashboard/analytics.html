@@ -9,8 +9,6 @@
     <link rel="stylesheet" href="styles.css">
     
     <!-- External JS -->
-    <script src="config.js"></script>
-    <script src="utils.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 </head>
@@ -65,15 +63,42 @@
         </div>
     </div>
 
-     <!-- External JavaScript -->
+    <!-- External JavaScript -->
     <script src="config.js"></script>
     <script src="utils.js"></script>
+    <script>
+        // Define local references
+        const CONFIG_REF = window.CONFIG || CONFIG;
+        const API_URL = CONFIG_REF.API_URL || 'https://athena-scip-api.onrender.com';
+        const SUPABASE_URL = CONFIG_REF.SUPABASE_URL || 'https://catpprgdbvenutyyjqbx.supabase.co';
+        const SUPABASE_KEY = CONFIG_REF.SUPABASE_KEY || 'sb_publishable_ykiqckKEQw2m8XXvX4cGnQ_5ijzb7Py';
+        
+        // Supabase client
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    </script>
     <script src="analytics.js"></script>
     
     <script>
+        // Local logout function
+        function logout() {
+            window.location.href = 'secure-login.html';
+        }
+        
         document.addEventListener('DOMContentLoaded', function() {
             const logoutBtn = document.getElementById('logoutBtn');
-            if (logoutBtn) logoutBtn.addEventListener('click', logout);
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', function() {
+                    if (typeof supabaseClient !== 'undefined' && supabaseClient) {
+                        supabaseClient.auth.signOut().then(() => {
+                            window.location.href = 'secure-login.html';
+                        }).catch(() => {
+                            window.location.href = 'secure-login.html';
+                        });
+                    } else {
+                        window.location.href = 'secure-login.html';
+                    }
+                });
+            }
         });
     </script>
 </body>

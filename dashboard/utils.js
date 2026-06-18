@@ -3,12 +3,12 @@
  * Reusable, maintainable, and SOLID-compliant utilities
  */
 
+// Check if already defined to prevent duplicate declaration
+if (typeof window.DataExporter === 'undefined') {
+
 class DataExporter {
     /**
      * Export data to CSV format
-     * @param {Array} data - Array of objects to export
-     * @param {string} filename - Output filename
-     * @param {Array} headers - Optional custom headers
      */
     static toCSV(data, filename = 'export', headers = null) {
         if (!data || data.length === 0) {
@@ -18,11 +18,8 @@ class DataExporter {
         
         const headerRow = headers || Object.keys(data[0]);
         const csvRows = [];
-        
-        // Add headers
         csvRows.push(headerRow.join(','));
         
-        // Add data rows
         for (const row of data) {
             const values = headerRow.map(header => {
                 const value = row[header] ?? '';
@@ -42,9 +39,6 @@ class DataExporter {
         URL.revokeObjectURL(link.href);
     }
     
-    /**
-     * Export data to JSON format
-     */
     static toJSON(data, filename = 'export') {
         const jsonContent = JSON.stringify(data, null, 2);
         const blob = new Blob([jsonContent], { type: 'application/json;charset=utf-8' });
@@ -57,11 +51,6 @@ class DataExporter {
 }
 
 class DateUtils {
-    /**
-     * Get date range for trend analysis
-     * @param {number} days - Number of days to go back
-     * @returns {Object} { startDate, endDate }
-     */
     static getDateRange(days) {
         const endDate = new Date();
         const startDate = new Date();
@@ -69,33 +58,20 @@ class DateUtils {
         return { startDate, endDate };
     }
     
-    /**
-     * Format date for display
-     */
     static formatDate(date, format = 'short') {
         const d = new Date(date);
-        if (format === 'short') {
-            return d.toLocaleDateString();
-        }
-        if (format === 'long') {
-            return d.toLocaleString();
-        }
+        if (format === 'short') return d.toLocaleDateString();
+        if (format === 'long') return d.toLocaleString();
         return d.toISOString().split('T')[0];
     }
 }
 
 class ValidationUtils {
-    /**
-     * Validate email format
-     */
     static isValidEmail(email) {
         const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         return re.test(email);
     }
     
-    /**
-     * Validate password strength
-     */
     static isStrongPassword(password) {
         return password && password.length >= 8;
     }
@@ -105,3 +81,10 @@ class ValidationUtils {
 window.DataExporter = DataExporter;
 window.DateUtils = DateUtils;
 window.ValidationUtils = ValidationUtils;
+
+} // End of if undefined check
+
+// Ensure exports are available
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { DataExporter, DateUtils, ValidationUtils };
+}

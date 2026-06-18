@@ -3,11 +3,25 @@
  * External JavaScript for all dashboard pages
  */
 
-// ============================================
-// AUTHENTICATION
-// ============================================
-const supabaseClient = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
-const API_URL = CONFIG.API_URL;
+// Check if CONFIG exists
+if (typeof CONFIG === 'undefined') {
+    console.error('CONFIG not loaded. Please check config.js');
+}
+
+// Use window.CONFIG if available, or CONFIG directly
+const _CONFIG = window.CONFIG || CONFIG;
+const API_URL = _CONFIG.API_URL || 'https://athena-scip-api.onrender.com';
+
+// Supabase client - check if already created
+if (typeof window.supabaseClient === 'undefined') {
+    window.supabaseClient = supabase.createClient(
+        _CONFIG.SUPABASE_URL || 'https://catpprgdbvenutyyjqbx.supabase.co',
+        _CONFIG.SUPABASE_KEY || 'sb_publishable_ykiqckKEQw2m8XXvX4cGnQ_5ijzb7Py'
+    );
+}
+const supabaseClient = window.supabaseClient;
+
+// ... rest of the file ...
 
 let priceChart = null, riskChart = null, pieChart = null;
 let allPrices = [];

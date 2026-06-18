@@ -2,8 +2,18 @@
  * Athena SCIP - Analytics Page Logic
  */
 
-const supabaseClient = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
-const API_URL = CONFIG.API_URL;
+// Use global or local config
+const _CONFIG = window.CONFIG || CONFIG;
+const API_URL = _CONFIG.API_URL || 'https://athena-scip-api.onrender.com';
+
+// Supabase client
+if (typeof window.supabaseClient === 'undefined') {
+    window.supabaseClient = supabase.createClient(
+        _CONFIG.SUPABASE_URL || 'https://catpprgdbvenutyyjqbx.supabase.co',
+        _CONFIG.SUPABASE_KEY || 'sb_publishable_ykiqckKEQw2m8XXvX4cGnQ_5ijzb7Py'
+    );
+}
+const supabaseClient = window.supabaseClient;
 
 let dailyChart = null, typeChart = null, countryChart = null;
 
@@ -15,6 +25,8 @@ async function checkAuth() {
         if (userInfo) userInfo.innerHTML = `👤 ${session.user.email}`;
     }
 }
+
+// ... rest of the file remains the same ...
 
 async function loadAnalytics() {
     try {

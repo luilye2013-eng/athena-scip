@@ -1,49 +1,16 @@
 /**
  * Athena SCIP - Central Configuration
  * Single source of truth for API URLs, icons, and settings
+ * Using var to prevent duplicate declaration errors
  */
-const CONFIG = {
+
+var CONFIG = {
     // API Configuration
     API_URL: 'https://athena-scip-api.onrender.com',
     
     // Supabase Configuration
     SUPABASE_URL: 'https://catpprgdbvenutyyjqbx.supabase.co',
     SUPABASE_KEY: 'sb_publishable_ykiqckKEQw2m8XXvX4cGnQ_5ijzb7Py',
-    
-    // Display Configuration
-    ICONS: {
-        home: '🏠',
-        recommendations: '💡',
-        events: '📰',
-        analytics: '📊',
-        logout: '🚪',
-        login: '🔒',
-        warning: '⚠️',
-        success: '✅',
-        error: '❌',
-        loading: '⏳',
-        refresh: '🔄',
-        export: '📥',
-        filter: '🔍',
-        chart: '📈',
-        price: '💰',
-        risk: '⚠️',
-        shipping: '🚢',
-        weather: '🌤️',
-        country: '🌍',
-        commodity: '🛢️',
-        calendar: '📅',
-        time: '🕐',
-        location: '📍',
-        source: '📡',
-        severity: '🚨',
-        urgency: '⚡',
-        action: '⚙️',
-        cost: '💲',
-        leadTime: '⏱️',
-        alternative: '🔄',
-        scenario: '🎯'
-    },
     
     // Default Settings
     DEFAULT_DAYS: 14,
@@ -66,7 +33,7 @@ const CONFIG = {
     }
 };
 
-// Export for use in other scripts
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = CONFIG;
+// Prevent re-declaration
+if (typeof window !== 'undefined' && !window.CONFIG) {
+    window.CONFIG = CONFIG;
 }
