@@ -22,13 +22,28 @@ async function loadEvents() {
         const data = result.success ? result.data : null;
         const events = data?.events || [];
 
-        document.getElementById('totalEvents').innerText = events.length;
-        document.getElementById('warCount').innerText = events.filter(e => e.event_type === 'war').length;
-        document.getElementById('disasterCount').innerText = events.filter(e => e.event_type === 'natural_disaster').length;
-        document.getElementById('otherCount').innerText = events.filter(e => !['war', 'natural_disaster'].includes(e.event_type)).length;
+        // Update summary - with null checks
+        const totalEl = document.getElementById('totalEvents');
+        if (totalEl) totalEl.innerText = events.length;
+        
+        const warEl = document.getElementById('warCount');
+        if (warEl) warEl.innerText = events.filter(e => e.event_type === 'war').length;
+        
+        const disasterEl = document.getElementById('disasterCount');
+        if (disasterEl) disasterEl.innerText = events.filter(e => e.event_type === 'natural_disaster').length;
+        
+        const otherEl = document.getElementById('otherCount');
+        if (otherEl) otherEl.innerText = events.filter(e => !['war', 'natural_disaster'].includes(e.event_type)).length;
+
+        // Events container
+        const container = document.getElementById('eventsContainer');
+        if (!container) {
+            console.error('eventsContainer not found');
+            return;
+        }
 
         if (!events.length) {
-            document.getElementById('eventsContainer').innerHTML = '<p>No events found</p>';
+            container.innerHTML = '<p>No events found</p>';
             return;
         }
 
@@ -62,15 +77,20 @@ async function loadEvents() {
         }
 
         html += `</tbody></table>`;
-        document.getElementById('eventsContainer').innerHTML = html;
+        container.innerHTML = html;
+        
+        // Update timestamp
         const lastUpdated = document.getElementById('lastUpdated');
-if (lastUpdated) {
-    lastUpdated.innerHTML = `Last updated: ${new Date().toLocaleString()}`;
-}
+        if (lastUpdated) {
+            lastUpdated.innerHTML = `Last updated: ${new Date().toLocaleString()}`;
+        }
 
     } catch (error) {
-    console.error('Events error:', error);
-    document.getElementById('eventsContainer').innerHTML = '<p>Error loading events</p>';
+        console.error('Events error:', error);
+        const container = document.getElementById('eventsContainer');
+        if (container) {
+            container.innerHTML = '<p>Error loading events</p>';
+        }
     }
 }
 

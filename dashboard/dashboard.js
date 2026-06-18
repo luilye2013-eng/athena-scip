@@ -123,7 +123,7 @@ async function loadPrices() {
         const data = await safeFetch(`${API_URL}/prices/live-comprehensive`);
         allPrices = data?.prices || [];
         
-        // If no prices from API, use fallback data
+        // If no prices from API, use fallback data with more commodities
         if (allPrices.length === 0) {
             allPrices = [
                 { commodity_name: 'Steel', price_usd: 847.50, unit: 'per ton', change_24h: -0.8 },
@@ -139,6 +139,27 @@ async function loadPrices() {
                 { commodity_name: 'Corn', price_usd: 198.00, unit: 'per bushel', change_24h: -0.1 },
                 { commodity_name: 'Soybeans', price_usd: 425.00, unit: 'per bushel', change_24h: 0.2 }
             ];
+        }
+        
+        // Make sure we have enough commodities
+        if (allPrices.length < 12) {
+            console.warn('⚠️ Only ' + allPrices.length + ' commodities available. Adding fallback data.');
+            const fallback = [
+                { commodity_name: 'Crude Oil', price_usd: 77.50, unit: 'per barrel', change_24h: -0.3 },
+                { commodity_name: 'Natural Gas', price_usd: 3.28, unit: 'per MMBtu', change_24h: 0.5 },
+                { commodity_name: 'Gold', price_usd: 2020.00, unit: 'per ounce', change_24h: 0.8 },
+                { commodity_name: 'Copper', price_usd: 4.70, unit: 'per pound', change_24h: -0.2 },
+                { commodity_name: 'Wheat', price_usd: 249.00, unit: 'per bushel', change_24h: 0.3 },
+                { commodity_name: 'Corn', price_usd: 198.00, unit: 'per bushel', change_24h: -0.1 },
+                { commodity_name: 'Soybeans', price_usd: 425.00, unit: 'per bushel', change_24h: 0.2 }
+            ];
+            // Merge, avoiding duplicates
+            const existingNames = allPrices.map(p => p.commodity_name);
+            for (let f of fallback) {
+                if (!existingNames.includes(f.commodity_name)) {
+                    allPrices.push(f);
+                }
+            }
         }
         
         displayPrices();
@@ -240,12 +261,17 @@ async function loadCountryRisk() {
         gridHtml += '</div>';
         container.innerHTML = gridHtml;
 
-        // Pie chart
+        // Pie chart - with proper destroy check
         const ctx = document.getElementById('riskPieChart');
         if (ctx) {
-            if (window.riskPieChart) {
+            // Check if chart exists before destroying
+            if (window.riskPieChart && typeof window.riskPieChart.destroy === 'function') {
                 window.riskPieChart.destroy();
+            } else if (window.riskPieChart) {
+                // If it exists but destroy is not a function, just clear it
+                delete window.riskPieChart;
             }
+            
             try {
                 window.riskPieChart = new Chart(ctx, {
                     type: 'pie',
@@ -267,6 +293,7 @@ async function loadCountryRisk() {
                         } 
                     }
                 });
+                console.log('✅ Risk pie chart created');
             } catch (chartError) {
                 console.error('Chart error:', chartError);
             }
