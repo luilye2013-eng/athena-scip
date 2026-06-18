@@ -13,8 +13,8 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1a2a3a 0%, #2c4a6e 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
             min-height: 100vh;
             display: flex;
             justify-content: center;
@@ -22,189 +22,350 @@
             padding: 20px;
         }
 
-        .login-card {
+        .login-container {
             background: white;
-            border-radius: 24px;
+            border-radius: 16px;
             padding: 40px;
             width: 100%;
-            max-width: 420px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            max-width: 400px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
         }
 
-        h1 {
+        .login-container h1 {
             font-size: 28px;
-            color: #1a2a3a;
-            margin-bottom: 8px;
+            color: #0f172a;
+            margin-bottom: 4px;
         }
 
-        .subtitle {
-            color: #6b7280;
-            margin-bottom: 30px;
+        .login-container .subtitle {
+            color: #64748b;
             font-size: 14px;
+            margin-bottom: 24px;
         }
 
-        input {
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: #334155;
+            margin-bottom: 4px;
+        }
+
+        .form-group input {
             width: 100%;
-            padding: 14px;
-            margin: 10px 0;
-            border: 1px solid #e5e7eb;
-            border-radius: 12px;
+            padding: 10px 14px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
             font-size: 14px;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
             transition: all 0.2s;
         }
 
-            input:focus {
-                outline: none;
-                border-color: #2c4a6e;
-                box-shadow: 0 0 0 3px rgba(44,74,110,0.1);
-            }
-
-        button {
-            width: 100%;
-            padding: 14px;
-            background: #2c4a6e;
+        .btn-primary {
+            background: #3b82f6;
             color: white;
-            border: none;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            margin-top: 10px;
-            transition: background 0.2s;
         }
 
-            button:hover {
-                background: #1a2a3a;
-            }
+        .btn-primary:hover {
+            background: #2563eb;
+        }
 
-            button:disabled {
-                background: #9ca3af;
-                cursor: not-allowed;
-            }
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
 
-        .error, .success {
-            padding: 12px;
-            border-radius: 12px;
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #334155;
+            margin-top: 8px;
+        }
+
+        .btn-secondary:hover {
+            background: #cbd5e1;
+        }
+
+        .toggle-link {
+            text-align: center;
+            margin-top: 16px;
+            font-size: 14px;
+            color: #64748b;
+        }
+
+        .toggle-link a {
+            color: #3b82f6;
+            text-decoration: none;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .toggle-link a:hover {
+            text-decoration: underline;
+        }
+
+        .error-msg {
+            background: #fef2f2;
+            color: #dc2626;
+            padding: 10px 14px;
+            border-radius: 8px;
             font-size: 13px;
-            margin: 10px 0;
+            margin-bottom: 16px;
             display: none;
         }
 
-        .error {
-            background: #fee2e2;
-            color: #dc2626;
-        }
-
-        .success {
-            background: #d1fae5;
-            color: #10b981;
-        }
-
-        .toggle {
-            text-align: center;
-            margin-top: 20px;
+        .success-msg {
+            background: #f0fdf4;
+            color: #16a34a;
+            padding: 10px 14px;
+            border-radius: 8px;
             font-size: 13px;
+            margin-bottom: 16px;
+            display: none;
         }
 
-            .toggle a {
-                color: #2c4a6e;
-                cursor: pointer;
-                text-decoration: underline;
-            }
-
-        .info {
+        .footer {
             text-align: center;
             margin-top: 20px;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+        .password-requirements {
             font-size: 11px;
-            color: #9ca3af;
+            color: #94a3b8;
+            margin-top: 4px;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #e2e8f0;
+            border-top: 2px solid #3b82f6;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .hidden {
+            display: none !important;
         }
     </style>
 </head>
 <body>
-    <div class="login-card">
-        <h1>?? Athena SCIP</h1>
-        <div class="subtitle">Supply Chain Intelligence Platform</div>
+    <div class="login-container">
+        <h1>🔒 Athena SCIP</h1>
+        <p class="subtitle">Supply Chain Intelligence Platform</p>
 
-        <div id="errorMsg" class="error"></div>
-        <div id="successMsg" class="success"></div>
+        <div id="errorMsg" class="error-msg"></div>
+        <div id="successMsg" class="success-msg"></div>
 
-        <input type="email" id="email" placeholder="Email address">
-        <input type="password" id="password" placeholder="Password">
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="email">Email address</label>
+                <input type="email" id="email" placeholder="you@example.com" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" placeholder="••••••••" required>
+                <div class="password-requirements">Password must be at least 8 characters</div>
+            </div>
+            <button type="submit" class="btn btn-primary" id="loginBtn">Login</button>
+        </form>
 
-        <button id="actionBtn">Login</button>
-
-        <div class="toggle">
-            <a id="toggleLink">Create an account</a>
+        <div id="signupForm" class="hidden">
+            <div class="form-group">
+                <label for="signupEmail">Email address</label>
+                <input type="email" id="signupEmail" placeholder="you@example.com" required>
+            </div>
+            <div class="form-group">
+                <label for="signupPassword">Password</label>
+                <input type="password" id="signupPassword" placeholder="••••••••" required>
+                <div class="password-requirements">Password must be at least 8 characters</div>
+            </div>
+            <button type="submit" class="btn btn-primary" id="signupBtn">Create Account</button>
+            <button type="button" class="btn btn-secondary" id="backToLoginBtn">← Back to Login</button>
         </div>
-        <div class="info">?? Secure authentication powered by Supabase</div>
+
+        <div class="toggle-link" id="toggleLink">
+            <a id="toggleAction">Create an account</a>
+        </div>
+
+        <div class="footer">🔐 Secure authentication powered by Supabase</div>
     </div>
 
     <script>
         const SUPABASE_URL = 'https://catpprgdbvenutyyjqbx.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_ykiqckKEQw2m8XXvX4cGnQ_5ijzb7Py';
-        const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        let isLogin = true;
+        let isSignupMode = false;
 
-        const emailInput = document.getElementById('email');
-        const passwordInput = document.getElementById('password');
-        const actionBtn = document.getElementById('actionBtn');
+        // DOM Elements
+        const loginForm = document.getElementById('loginForm');
+        const signupForm = document.getElementById('signupForm');
         const toggleLink = document.getElementById('toggleLink');
-        const errorDiv = document.getElementById('errorMsg');
-        const successDiv = document.getElementById('successMsg');
+        const toggleAction = document.getElementById('toggleAction');
+        const errorMsg = document.getElementById('errorMsg');
+        const successMsg = document.getElementById('successMsg');
+        const loginBtn = document.getElementById('loginBtn');
+        const signupBtn = document.getElementById('signupBtn');
+        const backToLoginBtn = document.getElementById('backToLoginBtn');
 
-        function showError(msg) { errorDiv.style.display = 'block'; errorDiv.textContent = msg; successDiv.style.display = 'none'; setTimeout(() => errorDiv.style.display = 'none', 5000); }
-        function showSuccess(msg) { successDiv.style.display = 'block'; successDiv.textContent = msg; errorDiv.style.display = 'none'; setTimeout(() => successDiv.style.display = 'none', 3000); }
+        function showError(message) {
+            errorMsg.textContent = message;
+            errorMsg.style.display = 'block';
+            successMsg.style.display = 'none';
+        }
 
-        async function handleAuth() {
-            const email = emailInput.value.trim();
-            const password = passwordInput.value;
+        function showSuccess(message) {
+            successMsg.textContent = message;
+            successMsg.style.display = 'block';
+            errorMsg.style.display = 'none';
+        }
 
-            if (!email || !password) return showError('Please enter email and password');
-
-            actionBtn.disabled = true;
-            actionBtn.textContent = isLogin ? 'Logging in...' : 'Creating account...';
-
-            if (isLogin) {
-                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-                if (error) showError('Login failed: ' + error.message);
-                else {
-                    showSuccess('Login successful! Redirecting...');
-                    localStorage.setItem('athena_user', JSON.stringify({ id: data.user.id, email: data.user.email }));
-                    setTimeout(() => window.location.href = 'index.html', 1000);
-                }
-            } else {
-                const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: email.split('@')[0] } } });
-                if (error) showError('Signup failed: ' + error.message);
-                else {
-                    showSuccess('Account created! Please login.');
-                    isLogin = true;
-                    actionBtn.textContent = 'Login';
-                    toggleLink.textContent = 'Create an account';
-                    passwordInput.value = '';
-                }
-            }
-            actionBtn.disabled = false;
-            actionBtn.textContent = isLogin ? 'Login' : 'Sign Up';
+        function hideMessages() {
+            errorMsg.style.display = 'none';
+            successMsg.style.display = 'none';
         }
 
         function toggleMode() {
-            isLogin = !isLogin;
-            actionBtn.textContent = isLogin ? 'Login' : 'Sign Up';
-            toggleLink.textContent = isLogin ? 'Create an account' : 'Back to login';
-            errorDiv.style.display = 'none';
-            successDiv.style.display = 'none';
+            isSignupMode = !isSignupMode;
+            if (isSignupMode) {
+                loginForm.classList.add('hidden');
+                signupForm.classList.remove('hidden');
+                toggleAction.textContent = '← Back to Login';
+                toggleLink.style.display = 'none';
+                hideMessages();
+            } else {
+                loginForm.classList.remove('hidden');
+                signupForm.classList.add('hidden');
+                toggleAction.textContent = 'Create an account';
+                toggleLink.style.display = 'block';
+                hideMessages();
+            }
         }
 
+        // Toggle link click
+        toggleAction.addEventListener('click', toggleMode);
+        backToLoginBtn.addEventListener('click', toggleMode);
+
+        // Login
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideMessages();
+
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+
+            if (!email || !password) {
+                showError('Please enter both email and password.');
+                return;
+            }
+
+            loginBtn.disabled = true;
+            loginBtn.innerHTML = '<span class="loading-spinner"></span> Logging in...';
+
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+
+                if (error) {
+                    showError(error.message);
+                } else {
+                    showSuccess('Login successful! Redirecting...');
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 1000);
+                }
+            } catch (error) {
+                showError('An unexpected error occurred. Please try again.');
+            } finally {
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Login';
+            }
+        });
+
+        // Signup
+        signupForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideMessages();
+
+            const email = document.getElementById('signupEmail').value.trim();
+            const password = document.getElementById('signupPassword').value;
+
+            if (!email || !password) {
+                showError('Please enter both email and password.');
+                return;
+            }
+
+            if (password.length < 8) {
+                showError('Password must be at least 8 characters.');
+                return;
+            }
+
+            signupBtn.disabled = true;
+            signupBtn.innerHTML = '<span class="loading-spinner"></span> Creating account...';
+
+            try {
+                const { data, error } = await supabase.auth.signUp({
+                    email: email,
+                    password: password
+                });
+
+                if (error) {
+                    showError(error.message);
+                } else {
+                    showSuccess('Account created! Please check your email to confirm your account, then log in.');
+                    // Switch back to login mode after 3 seconds
+                    setTimeout(() => {
+                        toggleMode();
+                        document.getElementById('email').value = email;
+                    }, 3000);
+                }
+            } catch (error) {
+                showError('An unexpected error occurred. Please try again.');
+            } finally {
+                signupBtn.disabled = false;
+                signupBtn.textContent = 'Create Account';
+            }
+        });
+
+        // Check if already logged in
         async function checkSession() {
             const { data: { session } } = await supabase.auth.getSession();
-            if (session) window.location.href = 'index.html';
+            if (session) {
+                window.location.href = 'index.html';
+            }
         }
-
-        actionBtn.addEventListener('click', handleAuth);
-        toggleLink.addEventListener('click', toggleMode);
-        passwordInput.addEventListener('keypress', e => { if (e.key === 'Enter') handleAuth(); });
-
         checkSession();
     </script>
 </body>
