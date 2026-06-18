@@ -2,14 +2,10 @@
  * Athena SCIP - Recommendations Page Logic
  */
 
-// Use global config - DO NOT redeclare API_URL
-const supabaseClient = window.supabaseClient || supabase.createClient(
-    CONFIG.SUPABASE_URL,
-    CONFIG.SUPABASE_KEY
-);
-window.supabaseClient = supabaseClient;
+// Use window objects - NO DECLARATIONS
+const API_URL = window.CONFIG.API_URL;
+const supabaseClient = window.supabaseClient;
 
-// Cost reference data (real-world estimates)
 const COST_REFERENCE = {
     'Wheat': { basePrice: 245, unit: 'per ton', shippingCost: 0.15 },
     'Natural Gas': { basePrice: 3.28, unit: 'per MMBtu', shippingCost: 0.20 },
@@ -21,7 +17,6 @@ const COST_REFERENCE = {
     'Iron Ore': { basePrice: 117.20, unit: 'per ton', shippingCost: 0.10 }
 };
 
-// Supplier alternatives with cost/lead time data
 const SUPPLIER_ALTERNATIVES = {
     'Russia': [
         { country: 'United States', leadTime: 30, costIncrease: 25 },
@@ -117,7 +112,7 @@ async function loadRecommendations() {
     if (!container) return;
     
     try {
-        const response = await fetch(`${CONFIG.API_URL}/recommendations/improved?limit=10`);
+        const response = await fetch(`${API_URL}/recommendations/improved?limit=10`);
         const result = await response.json();
         const data = result.success ? result.data : null;
         const recommendations = data?.recommendations || [];
@@ -155,9 +150,6 @@ async function loadRecommendations() {
     }
 }
 
-// ============================================
-// SCENARIO SIMULATION
-// ============================================
 async function runScenario(type) {
     const resultDiv = document.getElementById('scenarioResult');
     const titleDiv = document.getElementById('scenarioTitle');
@@ -170,7 +162,7 @@ async function runScenario(type) {
     contentDiv.innerHTML = 'Loading...';
     
     try {
-        const eventsResponse = await fetch(`${CONFIG.API_URL}/events?event_type=${type}&limit=20`);
+        const eventsResponse = await fetch(`${API_URL}/events?event_type=${type}&limit=20`);
         const eventsData = await eventsResponse.json();
         const events = eventsData.success ? eventsData.data.events : [];
         
@@ -264,7 +256,14 @@ async function runScenario(type) {
     }
 }
 
-// Initialize
 document.addEventListener('DOMContentLoaded', function() {
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', function() {
+            supabaseClient.auth.signOut().then(() => {
+                window.location.href = 'secure-login.html';
+            });
+        });
+    }
     checkAuth().then(loadRecommendations);
 });

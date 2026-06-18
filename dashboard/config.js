@@ -1,25 +1,18 @@
 /**
  * Athena SCIP - Central Configuration
- * Single source of truth for API URLs, icons, and settings
+ * SINGLE SOURCE OF TRUTH - Do not redeclare anywhere else
  */
 
-// Use window to prevent duplicate declaration
+// Only define if not already defined
 if (typeof window.CONFIG === 'undefined') {
     window.CONFIG = {
-        // API Configuration
         API_URL: 'https://athena-scip-api.onrender.com',
-        
-        // Supabase Configuration
         SUPABASE_URL: 'https://catpprgdbvenutyyjqbx.supabase.co',
         SUPABASE_KEY: 'sb_publishable_ykiqckKEQw2m8XXvX4cGnQ_5ijzb7Py',
-        
-        // Default Settings
         DEFAULT_DAYS: 14,
         DEFAULT_EVENTS_LIMIT: 100,
         DEFAULT_RECOMMENDATIONS_LIMIT: 50,
         MAX_EXPORT_LIMIT: 10000,
-        
-        // Color Palette (for charts and severity)
         COLORS: {
             critical: '#dc2626',
             high: '#f97316',
@@ -35,5 +28,4 @@ if (typeof window.CONFIG === 'undefined') {
     };
 }
 
-// Reference for use in other files
-const CONFIG = window.CONFIG;
+// No const declaration - use window.CONFIG directly

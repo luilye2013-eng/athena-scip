@@ -2,7 +2,8 @@
  * Athena SCIP - Login Page Logic
  */
 
-const supabaseClient = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
+// Use window objects - NO DECLARATIONS
+const supabaseClient = window.supabaseClient;
 
 let isSignupMode = false;
 

@@ -109,37 +109,12 @@
         </div>
     </div>
 
-      <!-- External JavaScript - Order matters! -->
+   <!-- External JavaScript - ORDER MATTERS! -->
     <script src="config.js"></script>
     <script src="utils.js"></script>
     <script src="supabase-client.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="dashboard.js"></script>
-    
-    <script>
-        // Initialize dashboard
-        document.addEventListener('DOMContentLoaded', function() {
-            // Set up event listeners
-            const logoutBtn = document.getElementById('logoutBtn');
-            if (logoutBtn) logoutBtn.addEventListener('click', logout);
-            
-            const showMoreBtn = document.getElementById('showMorePrices');
-            if (showMoreBtn) showMoreBtn.addEventListener('click', loadMorePrices);
-            
-            const trendPeriod = document.getElementById('trendPeriod');
-            if (trendPeriod) {
-                trendPeriod.addEventListener('change', function() {
-                    loadTrends(parseInt(this.value));
-                });
-            }
-            
-            // Load all data
-            checkAuth().then(() => {
-                loadAll();
-                setInterval(loadAll, 60000);
-            });
-        });
-    </script>
 </body>
 </html>

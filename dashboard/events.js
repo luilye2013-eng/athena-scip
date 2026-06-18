@@ -2,12 +2,9 @@
  * Athena SCIP - Events Page Logic
  */
 
-// Use global config
-const supabaseClient = window.supabaseClient || supabase.createClient(
-    CONFIG.SUPABASE_URL,
-    CONFIG.SUPABASE_KEY
-);
-window.supabaseClient = supabaseClient;
+// Use window objects - NO DECLARATIONS
+const API_URL = window.CONFIG.API_URL;
+const supabaseClient = window.supabaseClient;
 
 async function checkAuth() {
     const { data: { session } } = await supabaseClient.auth.getSession();
@@ -20,7 +17,7 @@ async function checkAuth() {
 
 async function loadEvents() {
     try {
-        const response = await fetch(`${CONFIG.API_URL}/events?limit=1000`);
+        const response = await fetch(`${API_URL}/events?limit=1000`);
         const result = await response.json();
         const data = result.success ? result.data : null;
         const events = data?.events || [];

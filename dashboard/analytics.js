@@ -2,8 +2,8 @@
  * Athena SCIP - Analytics Page Logic
  */
 
-// Use the global CONFIG and supabaseClient
-const CONFIG = window.CONFIG;
+// Use window objects - NO DECLARATIONS
+const API_URL = window.CONFIG.API_URL;
 const supabaseClient = window.supabaseClient;
 
 let dailyChart = null, typeChart = null, countryChart = null;
@@ -19,13 +19,11 @@ async function checkAuth() {
 
 async function loadAnalytics() {
     try {
-        // Fetch all events
-        const response = await fetch(`${CONFIG.API_URL}/events?limit=1000`);
+        const response = await fetch(`${API_URL}/events?limit=1000`);
         const result = await response.json();
         const data = result.success ? result.data : null;
         const events = data?.events || [];
 
-        // Stats
         document.getElementById('totalEvents').innerText = events.length;
         document.getElementById('warEvents').innerText = events.filter(e => e.event_type === 'war').length;
         document.getElementById('disasterEvents').innerText = events.filter(e => e.event_type === 'natural_disaster').length;
@@ -62,9 +60,7 @@ async function loadAnalytics() {
                 options: { 
                     responsive: true, 
                     maintainAspectRatio: true, 
-                    plugins: { 
-                        legend: { position: 'top' } 
-                    },
+                    plugins: { legend: { position: 'top' } },
                     scales: { y: { beginAtZero: true } }
                 }
             });
@@ -96,17 +92,13 @@ async function loadAnalytics() {
                 options: {
                     responsive: true,
                     maintainAspectRatio: true,
-                    plugins: { 
-                        legend: { display: false } 
-                    },
-                    scales: { 
-                        y: { beginAtZero: true } 
-                    }
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true } }
                 }
             });
         }
 
-        // Country chart - different colors for each bar
+        // Country chart
         const countryData = {};
         events.forEach(e => {
             const country = e.location_country;
@@ -117,7 +109,7 @@ async function loadAnalytics() {
         const sortedCountries = Object.entries(countryData).sort((a, b) => b[1] - a[1]).slice(0, 12);
         const countryLabels = sortedCountries.map(c => c[0]);
         const countryCounts = sortedCountries.map(c => c[1]);
-        const countryColors = CONFIG.COLORS.chart;
+        const countryColors = window.CONFIG.COLORS.chart;
 
         if (countryChart) countryChart.destroy();
         const ctx3 = document.getElementById('countryChart');
@@ -137,9 +129,7 @@ async function loadAnalytics() {
                 options: {
                     responsive: true,
                     maintainAspectRatio: true,
-                    plugins: { 
-                        legend: { display: false } 
-                    },
+                    plugins: { legend: { display: false } },
                     scales: {
                         y: { beginAtZero: true },
                         x: { ticks: { font: { size: 10 } } }
@@ -155,7 +145,6 @@ async function loadAnalytics() {
     }
 }
 
-// Initialize - check auth first, then load data
 document.addEventListener('DOMContentLoaded', function() {
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
