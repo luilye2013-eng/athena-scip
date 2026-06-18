@@ -64,6 +64,7 @@
         }
         .message.error { background: #fef2f2; color: #dc2626; display: block; }
         .message.success { background: #f0fdf4; color: #16a34a; display: block; }
+        .message.info { background: #eff6ff; color: #2563eb; display: block; }
         .hidden { display: none !important; }
         .footer { text-align: center; margin-top: 20px; font-size: 12px; color: #94a3b8; }
         .loading-spinner {
@@ -78,12 +79,27 @@
             margin-right: 8px;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .info-box {
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+            border-radius: 8px;
+            padding: 12px 14px;
+            font-size: 12px;
+            color: #0c4a6e;
+            margin-bottom: 16px;
+            display: none;
+        }
+        .info-box.show { display: block; }
     </style>
 </head>
 <body>
     <div class="login-container">
         <h1>🔒 Athena SCIP</h1>
         <p class="subtitle">Supply Chain Intelligence Platform</p>
+
+        <div id="infoBox" class="info-box">
+            💡 You may need to check your email for confirmation after signing up.
+        </div>
 
         <div id="message" class="message"></div>
 
@@ -100,7 +116,7 @@
             <button type="submit" class="btn btn-primary" id="loginBtn">Login</button>
         </form>
 
-        <!-- Signup Form (hidden by default) -->
+        <!-- Signup Form -->
         <form id="signupForm" class="hidden">
             <div class="form-group">
                 <label for="signupEmail">Email address</label>
@@ -126,8 +142,6 @@
         // Supabase configuration
         const SUPABASE_URL = 'https://catpprgdbvenutyyjqbx.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_ykiqckKEQw2m8XXvX4cGnQ_5ijzb7Py';
-        
-        // Create the Supabase client - using a unique variable name
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         console.log('🔑 Supabase initialized');
@@ -140,6 +154,7 @@
         const toggleAction = document.getElementById('toggleAction');
         const backToLoginBtn = document.getElementById('backToLoginBtn');
         const messageDiv = document.getElementById('message');
+        const infoBox = document.getElementById('infoBox');
         const loginBtn = document.getElementById('loginBtn');
         const signupBtn = document.getElementById('signupBtn');
 
@@ -159,11 +174,13 @@
                 loginForm.classList.add('hidden');
                 signupForm.classList.remove('hidden');
                 toggleAction.textContent = '← Back to Login';
+                infoBox.classList.add('show');
                 hideMessage();
             } else {
                 loginForm.classList.remove('hidden');
                 signupForm.classList.add('hidden');
                 toggleAction.textContent = 'Create an account';
+                infoBox.classList.remove('show');
                 hideMessage();
             }
         }
@@ -199,7 +216,13 @@
                 console.log('📡 Login response:', { data, error });
 
                 if (error) {
-                    showMessage('❌ ' + error.message, 'error');
+                    let errorMsg = error.message;
+                    if (error.message.includes('Invalid login credentials')) {
+                        errorMsg = '❌ Invalid email or password. Please check and try again.';
+                    } else if (error.message.includes('Email not confirmed')) {
+                        errorMsg = '❌ Please confirm your email first. Check your inbox for the confirmation link.';
+                    }
+                    showMessage(errorMsg, 'error');
                 } else {
                     showMessage('✅ Login successful! Redirecting...', 'success');
                     setTimeout(() => {
@@ -241,7 +264,10 @@
             try {
                 const { data, error } = await supabaseClient.auth.signUp({
                     email: email,
-                    password: password
+                    password: password,
+                    options: {
+                        emailRedirectTo: window.location.origin + '/secure-login.html'
+                    }
                 });
 
                 console.log('📡 Signup response:', { data, error });
@@ -249,14 +275,13 @@
                 if (error) {
                     showMessage('❌ ' + error.message, 'error');
                 } else if (data.user) {
-                    showMessage('✅ Account created! Please check your email to confirm, then log in.', 'success');
-                    // Switch back to login after 3 seconds
+                    showMessage('✅ Account created! Check your email (including spam) for confirmation link.', 'success');
                     setTimeout(() => {
                         toggleMode();
                         document.getElementById('email').value = email;
-                    }, 3000);
+                    }, 4000);
                 } else {
-                    showMessage('⚠️ Signup successful, but please check your email for confirmation.', 'success');
+                    showMessage('✅ Account created! Please check your email for confirmation.', 'success');
                 }
             } catch (err) {
                 console.error('❌ Signup error:', err);
