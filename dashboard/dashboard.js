@@ -1,14 +1,10 @@
 /**
  * Athena SCIP - Main Dashboard Logic
- * External JavaScript for dashboard home page
  */
 
-// Use global config
-const supabaseClient = window.supabaseClient || supabase.createClient(
-    CONFIG.SUPABASE_URL,
-    CONFIG.SUPABASE_KEY
-);
-window.supabaseClient = supabaseClient;
+// Use the global CONFIG and supabaseClient
+const CONFIG = window.CONFIG;
+const supabaseClient = window.supabaseClient;
 
 let priceChart = null, riskChart = null, pieChart = null;
 let allPrices = [];
@@ -45,9 +41,6 @@ function updateTimestamp() {
     if (el) el.innerHTML = `Last updated: ${new Date().toLocaleString()}`;
 }
 
-// ============================================
-// WEATHER
-// ============================================
 async function loadWeather() {
     const container = document.getElementById('weatherContainer');
     if (!container) return;
@@ -84,9 +77,6 @@ async function loadWeather() {
     }
 }
 
-// ============================================
-// SHIPPING
-// ============================================
 async function loadShipping() {
     const container = document.getElementById('shippingContainer');
     if (!container) return;
@@ -125,9 +115,6 @@ async function loadShipping() {
     }
 }
 
-// ============================================
-// PRICES
-// ============================================
 async function loadPrices() {
     const container = document.getElementById('pricesContainer');
     if (!container) return;
@@ -182,9 +169,6 @@ function loadMorePrices() {
     displayPrices();
 }
 
-// ============================================
-// STATS
-// ============================================
 async function loadStats() {
     try {
         const summary = await safeFetch(`${CONFIG.API_URL}/events/summary`);
@@ -207,9 +191,6 @@ async function loadStats() {
     }
 }
 
-// ============================================
-// COUNTRY RISK
-// ============================================
 async function loadCountryRisk() {
     const container = document.getElementById('countryRiskContainer');
     if (!container) return;
@@ -218,7 +199,7 @@ async function loadCountryRisk() {
         const data = await safeFetch(`${CONFIG.API_URL}/country-risk/enhanced`);
         const countries = data?.countries || [];
         if (!countries.length) {
-            container.innerHTML = '<p>No risk data</p>';
+            container.innerHTML = '<p>Risk data unavailable</p>';
             return;
         }
         let gridHtml = '<div class="risk-grid">';
@@ -262,9 +243,6 @@ async function loadCountryRisk() {
     }
 }
 
-// ============================================
-// TRENDS
-// ============================================
 async function loadTrends(days = 14) {
     try {
         const priceData = await safeFetch(`${CONFIG.API_URL}/trends/prices?days=${days}`);
@@ -383,9 +361,6 @@ async function loadTrends(days = 14) {
     }
 }
 
-// ============================================
-// DATA EXPORT
-// ============================================
 async function exportData(type) {
     const statusDiv = document.getElementById('exportStatus');
     if (!statusDiv) return;
@@ -431,7 +406,6 @@ async function exportData(type) {
             if (window.DataExporter) {
                 window.DataExporter.toJSON(jsonData, filename);
             } else {
-                // Fallback
                 const jsonContent = JSON.stringify(jsonData, null, 2);
                 const blob = new Blob([jsonContent], { type: 'application/json;charset=utf-8' });
                 const link = document.createElement('a');
@@ -489,9 +463,6 @@ async function exportAllData() {
     }
 }
 
-// ============================================
-// LOAD ALL
-// ============================================
 async function loadAll() {
     await loadStats();
     await loadWeather();

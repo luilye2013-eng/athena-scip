@@ -68,9 +68,12 @@
         </div>
     </div>
 
-       <!-- External JavaScript -->
+        <!-- External JavaScript - Order matters! -->
     <script src="config.js"></script>
     <script src="utils.js"></script>
+    <script src="supabase-client.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    <script src="recommendations.js"></script>
     <script>
         // Define local references
         const CONFIG_REF = window.CONFIG || CONFIG;

@@ -2,12 +2,9 @@
  * Athena SCIP - Analytics Page Logic
  */
 
-// Use global config - DO NOT redeclare API_URL
-const supabaseClient = window.supabaseClient || supabase.createClient(
-    CONFIG.SUPABASE_URL,
-    CONFIG.SUPABASE_KEY
-);
-window.supabaseClient = supabaseClient;
+// Use the global CONFIG and supabaseClient
+const CONFIG = window.CONFIG;
+const supabaseClient = window.supabaseClient;
 
 let dailyChart = null, typeChart = null, countryChart = null;
 
@@ -160,5 +157,13 @@ async function loadAnalytics() {
 
 // Initialize - check auth first, then load data
 document.addEventListener('DOMContentLoaded', function() {
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', function() {
+            supabaseClient.auth.signOut().then(() => {
+                window.location.href = 'secure-login.html';
+            });
+        });
+    }
     checkAuth().then(loadAnalytics);
 });
