@@ -1,359 +1,39 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Athena SCIP - Supply Chain Intelligence</title>
+    <title>Athena SCIP - Dashboard</title>
+    
+    <!-- External CSS -->
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- External JS -->
+    <script src="config.js"></script>
+    <script src="utils.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-            background: #f0f2f5;
-            color: #1a2a3a;
-            line-height: 1.4;
-        }
-
-        .header {
-            background: linear-gradient(135deg, #1a2a3a 0%, #2c4a6e 100%);
-            color: white;
-            padding: 20px 30px;
-        }
-
-            .header h1 {
-                font-size: 1.5rem;
-                margin-bottom: 4px;
-            }
-
-            .header p {
-                font-size: 12px;
-                opacity: 0.85;
-            }
-
-        .nav {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-            flex-wrap: wrap;
-        }
-
-        .nav-btn {
-            background: rgba(255,255,255,0.15);
-            color: white;
-            border: none;
-            padding: 8px 20px;
-            border-radius: 30px;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 500;
-            transition: all 0.2s;
-        }
-
-            .nav-btn:hover {
-                background: rgba(255,255,255,0.3);
-            }
-
-            .nav-btn.active {
-                background: white;
-                color: #2c4a6e;
-            }
-
-        .logout-btn {
-            background: #dc2626;
-            color: white;
-            border: none;
-            padding: 6px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            float: right;
-            margin-top: -45px;
-            font-size: 12px;
-        }
-
-            .logout-btn:hover {
-                background: #b91c1c;
-            }
-
-        .container {
-            max-width: 1600px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        .last-updated {
-            font-size: 11px;
-            color: #6b7280;
-            text-align: right;
-            margin-bottom: 15px;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 15px;
-            margin-bottom: 25px;
-        }
-
-        .stat-card {
-            background: white;
-            padding: 16px;
-            border-radius: 14px;
-            text-align: center;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-        }
-
-        .stat-number {
-            font-size: 28px;
-            font-weight: 700;
-            color: #2c4a6e;
-        }
-
-        .stat-label {
-            font-size: 12px;
-            color: #6b7280;
-            margin-top: 4px;
-        }
-
-        .three-columns {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-            margin-bottom: 25px;
-        }
-
-        .card {
-            background: white;
-            border-radius: 14px;
-            padding: 16px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-        }
-
-            .card h3 {
-                font-size: 15px;
-                margin-bottom: 12px;
-                color: #2c4a6e;
-                display: flex;
-                align-items: center;
-                gap: 6px;
-            }
-
-        .weather-item {
-            margin-bottom: 10px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #e5e7eb;
-        }
-
-        .weather-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: pointer;
-        }
-
-            .weather-header:hover {
-                background: #f8fafc;
-                border-radius: 4px;
-            }
-
-        .weather-desc {
-            font-size: 11px;
-            color: #4b5563;
-            margin-top: 4px;
-            padding: 8px;
-            background: #f8fafc;
-            border-radius: 6px;
-        }
-
-        .shipping-item {
-            padding: 8px 0;
-            border-bottom: 1px solid #e5e7eb;
-        }
-
-        .shipping-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 4px;
-        }
-
-        .shipping-desc {
-            font-size: 11px;
-            color: #4b5563;
-            margin-top: 3px;
-        }
-
-        .price-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 6px 0;
-            border-bottom: 1px solid #e5e7eb;
-            font-size: 12px;
-        }
-
-        .price-up {
-            color: #10b981;
-        }
-
-        .price-down {
-            color: #dc2626;
-        }
-
-        .severity-badge {
-            display: inline-block;
-            padding: 2px 10px;
-            border-radius: 20px;
-            font-size: 10px;
-            font-weight: 600;
-        }
-
-        .severity-5 {
-            background: #dc2626;
-            color: white;
-        }
-
-        .severity-4 {
-            background: #f97316;
-            color: white;
-        }
-
-        .severity-3 {
-            background: #eab308;
-            color: black;
-        }
-
-        .severity-2 {
-            background: #86efac;
-            color: black;
-        }
-
-        .two-columns {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 25px;
-        }
-
-        .chart-card {
-            background: white;
-            border-radius: 14px;
-            padding: 16px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-        }
-
-            .chart-card h3 {
-                font-size: 15px;
-                margin-bottom: 12px;
-                color: #2c4a6e;
-            }
-
-        canvas {
-            max-height: 250px;
-            width: 100%;
-        }
-
-        .risk-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-            gap: 10px;
-        }
-
-        .risk-item {
-            padding: 10px;
-            background: #f8fafc;
-            border-radius: 10px;
-            text-align: center;
-            font-size: 12px;
-        }
-
-        .risk-critical {
-            color: #dc2626;
-            font-weight: 700;
-        }
-
-        .risk-high {
-            color: #f97316;
-            font-weight: 700;
-        }
-
-        .disclaimer {
-            background: #fef3c7;
-            color: #92400e;
-            border-left: 4px solid #f59e0b;
-            padding: 10px 15px;
-            margin-top: 20px;
-            border-radius: 8px;
-            font-size: 11px;
-            text-align: center;
-        }
-
-        .scrollable {
-            max-height: 400px;
-            overflow-y: auto;
-            padding-right: 5px;
-        }
-
-            .scrollable::-webkit-scrollbar {
-                width: 4px;
-            }
-
-            .scrollable::-webkit-scrollbar-track {
-                background: #f1f1f1;
-                border-radius: 4px;
-            }
-
-            .scrollable::-webkit-scrollbar-thumb {
-                background: #c1c7cd;
-                border-radius: 4px;
-            }
-
-        .flag-icon {
-            margin-right: 4px;
-        }
-
-        @media (max-width: 1000px) {
-            .three-columns, .two-columns {
-                grid-template-columns: 1fr;
-            }
-
-            .stats-grid {
-                grid-template-columns: repeat(3, 1fr);
-            }
-        }
-
-        @media (max-width: 600px) {
-            .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-    </style>
 </head>
 <body>
     <div class="header">
         <div>
-            <h1>?? Athena SCIP</h1>
+            <h1>📊 Athena SCIP</h1>
             <p>Supply Chain Intelligence Platform</p>
             <div id="userInfo" style="font-size: 11px; margin-top: 4px;">Loading...</div>
         </div>
-        <button class="logout-btn" id="logoutBtn">?? Logout</button>
+        <button class="logout-btn" id="logoutBtn">🚪 Logout</button>
         <div class="nav">
-            <button class="nav-btn active" onclick="location.href='index.html'">?? Home</button>
-            <button class="nav-btn" onclick="location.href='recommendations.html'">?? Recommendations</button>
-            <button class="nav-btn" onclick="location.href='events.html'">?? Events</button>
-            <button class="nav-btn" onclick="location.href='analytics.html'">?? Analytics</button>
+            <a href="index.html" class="nav-btn active">🏠 Home</a>
+            <a href="recommendations.html" class="nav-btn">💡 Recommendations</a>
+            <a href="events.html" class="nav-btn">📰 Events</a>
+            <a href="analytics.html" class="nav-btn">📊 Analytics</a>
         </div>
     </div>
 
     <div class="container">
         <div id="lastUpdated" class="last-updated">Loading data...</div>
 
-        <!-- Stats Row -->
+        <!-- Stats Grid -->
         <div class="stats-grid">
             <div class="stat-card"><div class="stat-number" id="totalEvents">-</div><div class="stat-label">Total Events</div></div>
             <div class="stat-card"><div class="stat-number" id="warEvents">-</div><div class="stat-label">War Events</div></div>
@@ -365,54 +45,95 @@
         <!-- Three Columns -->
         <div class="three-columns">
             <div class="card">
-                <h3>??? Weather Alerts</h3>
+                <h3>🌤️ Weather Alerts</h3>
                 <div id="weatherContainer" class="scrollable">Loading...</div>
             </div>
             <div class="card">
-                <h3>?? Shipping Disruptions</h3>
+                <h3>🚢 Shipping Disruptions</h3>
                 <div id="shippingContainer" class="scrollable">Loading...</div>
             </div>
             <div class="card">
-                <h3>?? Commodity Prices</h3>
+                <h3>💰 Commodity Prices</h3>
                 <div id="pricesContainer" class="scrollable">Loading...</div>
+                <button id="showMorePrices" onclick="loadMorePrices()" style="margin-top: 10px; padding: 6px 12px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; display: none;">
+                    Show More
+                </button>
             </div>
         </div>
 
-        <!-- Two Columns for Charts -->
+        <!-- Charts -->
         <div class="two-columns">
             <div class="chart-card">
-                <h3>?? Commodity Price Trends (14 Days)</h3>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h3>📈 Commodity Price Trends</h3>
+                    <select id="trendPeriod" style="padding: 4px 8px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 12px;">
+                        <option value="7">7 Days</option>
+                        <option value="14" selected>14 Days</option>
+                        <option value="30">30 Days</option>
+                        <option value="90">90 Days</option>
+                    </select>
+                </div>
                 <canvas id="priceTrendChart"></canvas>
             </div>
             <div class="chart-card">
-                <h3>?? Risk Score Trends (14 Days)</h3>
+                <h3>⚠️ Risk Score Trends</h3>
                 <canvas id="riskTrendChart"></canvas>
             </div>
         </div>
 
         <!-- Country Risk -->
         <div class="chart-card">
-            <h3>?? Country Risk Distribution</h3>
+            <h3>🌍 Country Risk Distribution</h3>
             <div class="two-columns" style="gap: 15px; margin-bottom: 0;">
                 <canvas id="riskPieChart" style="max-height: 200px;"></canvas>
                 <div id="countryRiskContainer" class="risk-grid" style="max-height: 200px; overflow-y: auto;">Loading...</div>
             </div>
         </div>
 
+        <!-- Data Export -->
+        <div class="card" style="margin-top: 20px;">
+            <h3>📥 Data Export</h3>
+            <div class="export-buttons">
+                <button onclick="exportData('events')" class="btn-primary">📰 Export Events (CSV)</button>
+                <button onclick="exportData('recommendations')" class="btn-primary" style="background: #8b5cf6;">💡 Export Recs (CSV)</button>
+                <button onclick="exportData('prices')" class="btn-primary" style="background: #22c55e;">💰 Export Prices (JSON)</button>
+                <button onclick="exportData('risk')" class="btn-primary" style="background: #f97316;">⚠️ Export Risk (JSON)</button>
+                <button onclick="exportAllData()" class="btn-primary" style="background: #1a2a3a;">📦 Export All (JSON)</button>
+            </div>
+            <div id="exportStatus" style="margin-top: 8px; font-size: 12px; color: #6b7280;"></div>
+        </div>
+
         <!-- Disclaimer -->
         <div class="disclaimer">
-            ?? <strong>Data Accuracy Notice:</strong> All supply chain disruption data is sourced from third-party RSS feeds, APIs, and weather services. Athena SCIP does not modify or infer location data. Commodity prices are live from Yahoo Finance. For critical decisions, verify with primary sources.
+            ⚠️ <strong>Data Accuracy Notice:</strong> All data is sourced from third-party feeds. For critical decisions, verify with primary sources.
         </div>
     </div>
 
     <script>
-        const SUPABASE_URL = 'https://catpprgdbvenutyyjqbx.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_ykiqckKEQw2m8XXvX4cGnQ_5ijzb7Py';
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        const API_URL = 'https://athena-scip-api.onrender.com';
+        // ============================================
+        // AUTHENTICATION
+        // ============================================
+        const supabaseClient = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
+        const API_URL = CONFIG.API_URL;
 
         let priceChart = null, riskChart = null, pieChart = null;
+        let allPrices = [];
+        let priceDisplayLimit = 12;
 
+        async function checkAuth() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (!session) window.location.href = 'secure-login.html';
+            else document.getElementById('userInfo').innerHTML = `👤 ${session.user.email}`;
+        }
+
+        document.getElementById('logoutBtn').addEventListener('click', async () => {
+            await supabaseClient.auth.signOut();
+            window.location.href = 'secure-login.html';
+        });
+
+        // ============================================
+        // HELPER FUNCTIONS
+        // ============================================
         async function safeFetch(url) {
             try {
                 const response = await fetch(url);
@@ -429,18 +150,9 @@
             document.getElementById('lastUpdated').innerHTML = `Last updated: ${new Date().toLocaleString()}`;
         }
 
-        async function checkAuth() {
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            if (!session) window.location.href = 'secure-login.html';
-            else document.getElementById('userInfo').innerHTML = `?? ${session.user.email}`;
-        }
-
-        async function logout() {
-            await supabaseClient.auth.signOut();
-            window.location.href = 'secure-login.html';
-        }
-
-        // ========== LOAD WEATHER ==========
+        // ============================================
+        // LOAD FUNCTIONS
+        // ============================================
         async function loadWeather() {
             try {
                 const data = await safeFetch(`${API_URL}/weather/alerts`);
@@ -458,15 +170,15 @@
                     const alertId = `alert-${Math.random().toString(36).substring(2, 8)}`;
 
                     html += `<div class="weather-item">
-                            <div class="weather-header" onclick="document.getElementById('${alertId}').style.display = document.getElementById('${alertId}').style.display === 'none' ? 'block' : 'none'">
-                                <div>
-                                    <span class="severity-badge severity-${a.severity}">${severityText}</span>
-                                    <strong>${alertType}</strong>
-                                </div>
-                                <div style="font-size: 11px; color: #6b7280;">?? ${location}</div>
+                        <div class="weather-header" onclick="document.getElementById('${alertId}').style.display = document.getElementById('${alertId}').style.display === 'none' ? 'block' : 'none'">
+                            <div>
+                                <span class="severity-badge severity-${a.severity}">${severityText}</span>
+                                <strong>${alertType}</strong>
                             </div>
-                            <div id="${alertId}" class="weather-desc">${description}</div>
-                        </div>`;
+                            <div style="font-size: 11px; color: #6b7280;">📍 ${location}</div>
+                        </div>
+                        <div id="${alertId}" class="weather-desc">${description}</div>
+                    </div>`;
                 }
                 document.getElementById('weatherContainer').innerHTML = html;
             } catch (e) {
@@ -474,7 +186,6 @@
             }
         }
 
-        // ========== LOAD SHIPPING ==========
         async function loadShipping() {
             try {
                 const data = await safeFetch(`${API_URL}/shipping/disruptions`);
@@ -485,7 +196,7 @@
                     return;
                 }
                 let html = '';
-                for (let d of disruptions) {
+                for (let d of disruptions.slice(0, 8)) {
                     const severityText = d.severity === 5 ? 'Critical' : d.severity === 4 ? 'Severe' : d.severity === 3 ? 'Moderate' : 'Minor';
                     const delay = d.estimated_delay_days || 'N/A';
                     const route = d.route_name || 'Unknown';
@@ -493,14 +204,14 @@
                     const desc = d.description || 'No details available';
 
                     html += `<div class="shipping-item">
-                            <div class="shipping-header">
-                                <strong>${route}</strong>
-                                <span class="severity-badge severity-${d.severity}">${severityText}</span>
-                                <span>?? ${delay}d</span>
-                            </div>
-                            <div style="font-size: 10px; color: #6b7280;">?? ${type}</div>
-                            <div class="shipping-desc">${desc.substring(0, 100)}${desc.length > 100 ? '...' : ''}</div>
-                        </div>`;
+                        <div class="shipping-header">
+                            <strong>${route}</strong>
+                            <span class="severity-badge severity-${d.severity}">${severityText}</span>
+                            <span>⏱️ ${delay}d</span>
+                        </div>
+                        <div style="font-size: 10px; color: #6b7280;">📌 ${type}</div>
+                        <div class="shipping-desc">${desc.substring(0, 100)}${desc.length > 100 ? '...' : ''}</div>
+                    </div>`;
                 }
                 document.getElementById('shippingContainer').innerHTML = html;
             } catch (e) {
@@ -508,34 +219,67 @@
             }
         }
 
-        // ========== LOAD PRICES ==========
         async function loadPrices() {
             try {
                 const data = await safeFetch(`${API_URL}/prices/live-comprehensive`);
-                let prices = data?.prices || [];
-                if (!prices.length) {
-                    document.getElementById('pricesContainer').innerHTML = '<p>No price data</p>';
-                    return;
-                }
-                let html = '';
-                for (let p of prices.slice(0, 12)) {
-                    const change = p.change_24h || 0;
-                    const changeSymbol = change > 0 ? '?' : (change < 0 ? '?' : '?');
-                    const color = change > 0 ? '#10b981' : (change < 0 ? '#dc2626' : '#6b7280');
-                    html += `<div class="price-item">
-                            <strong>${p.commodity_name}</strong>
-                            <span>$${p.price_usd}</span>
-                            <span style="color: ${color};">${changeSymbol} ${Math.abs(change)}%</span>
-                            <span style="font-size: 9px; color: #6b7280;">${p.unit || ''}</span>
-                        </div>`;
-                }
-                document.getElementById('pricesContainer').innerHTML = html;
+                allPrices = data?.prices || [];
+                displayPrices();
             } catch (e) {
                 document.getElementById('pricesContainer').innerHTML = '<p>Price data unavailable</p>';
             }
         }
 
-        // ========== LOAD COUNTRY RISK ==========
+        function displayPrices() {
+            const prices = allPrices.slice(0, priceDisplayLimit);
+            const showMoreBtn = document.getElementById('showMorePrices');
+            
+            if (allPrices.length > priceDisplayLimit) {
+                showMoreBtn.style.display = 'inline-block';
+                showMoreBtn.textContent = `Show More (${allPrices.length - priceDisplayLimit} remaining)`;
+            } else {
+                showMoreBtn.style.display = 'none';
+            }
+            
+            if (!prices.length) {
+                document.getElementById('pricesContainer').innerHTML = '<p>No price data</p>';
+                return;
+            }
+            
+            let html = '';
+            for (let p of prices) {
+                const change = p.change_24h || 0;
+                const changeSymbol = change > 0 ? '▲' : (change < 0 ? '▼' : '●');
+                const color = change > 0 ? '#10b981' : (change < 0 ? '#dc2626' : '#6b7280');
+                html += `<div class="price-item">
+                    <strong>${p.commodity_name}</strong>
+                    <span>$${p.price_usd}</span>
+                    <span style="color: ${color};">${changeSymbol} ${Math.abs(change).toFixed(1)}%</span>
+                    <span style="font-size: 9px; color: #6b7280;">${p.unit || ''}</span>
+                </div>`;
+            }
+            document.getElementById('pricesContainer').innerHTML = html;
+        }
+
+        function loadMorePrices() {
+            priceDisplayLimit += 12;
+            displayPrices();
+        }
+
+        async function loadStats() {
+            try {
+                const summary = await safeFetch(`${API_URL}/events/summary`);
+                document.getElementById('totalEvents').innerText = summary?.total_events || 0;
+                const data = await safeFetch(`${API_URL}/events?limit=200`);
+                const events = data?.events || [];
+                document.getElementById('warEvents').innerText = events.filter(e => e.event_type === 'war').length;
+                document.getElementById('disasterEvents').innerText = events.filter(e => e.event_type === 'natural_disaster').length;
+                const recSummary = await safeFetch(`${API_URL}/recommendations/summary`);
+                document.getElementById('recCount').innerText = recSummary?.total_recommendations || 0;
+            } catch (e) {
+                console.error('Stats error:', e);
+            }
+        }
+
         async function loadCountryRisk() {
             try {
                 const data = await safeFetch(`${API_URL}/country-risk/enhanced`);
@@ -560,34 +304,32 @@
                 const ctx = document.getElementById('riskPieChart').getContext('2d');
                 pieChart = new Chart(ctx, {
                     type: 'pie',
-                    data: { labels: riskLabels, datasets: [{ data: riskScores, backgroundColor: ['#dc2626', '#f97316', '#eab308', '#10b981', '#2c4a6e', '#8b5cf6', '#ec4899', '#06b6d4'] }] },
-                    options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'bottom', labels: { font: { size: 10 } } } } }
+                    data: { 
+                        labels: riskLabels, 
+                        datasets: [{ 
+                            data: riskScores, 
+                            backgroundColor: CONFIG.COLORS.chart 
+                        }] 
+                    },
+                    options: { 
+                        responsive: true, 
+                        maintainAspectRatio: true, 
+                        plugins: { 
+                            legend: { 
+                                position: 'bottom', 
+                                labels: { font: { size: 10 } } 
+                            } 
+                        } 
+                    }
                 });
             } catch (e) {
                 document.getElementById('countryRiskContainer').innerHTML = '<p>Risk data unavailable</p>';
             }
         }
 
-        // ========== LOAD STATS ==========
-        async function loadStats() {
+        async function loadTrends(days = 14) {
             try {
-                const summary = await safeFetch(`${API_URL}/events/summary`);
-                document.getElementById('totalEvents').innerText = summary?.total_events || 0;
-                const data = await safeFetch(`${API_URL}/events?limit=200`);
-                const events = data?.events || [];
-                document.getElementById('warEvents').innerText = events.filter(e => e.event_type === 'war').length;
-                document.getElementById('disasterEvents').innerText = events.filter(e => e.event_type === 'natural_disaster').length;
-                const recSummary = await safeFetch(`${API_URL}/recommendations/summary`);
-                document.getElementById('recCount').innerText = recSummary?.total_recommendations || 0;
-            } catch (e) {
-                console.error('Stats error:', e);
-            }
-        }
-
-        // ========== LOAD TRENDS ==========
-        async function loadTrends() {
-            try {
-                const priceData = await safeFetch(`${API_URL}/trends/prices?days=14`);
+                const priceData = await safeFetch(`${API_URL}/trends/prices?days=${days}`);
                 let priceTrends = priceData?.trends || {};
 
                 if (Object.keys(priceTrends).length === 0) {
@@ -602,7 +344,7 @@
                 }
 
                 const commodities = ['Steel', 'Wheat', 'Crude Oil', 'Natural Gas', 'Copper', 'Gold'];
-                const colors = ['#2c4a6e', '#eab308', '#dc2626', '#10b981', '#8b5cf6', '#f97316'];
+                const colors = CONFIG.COLORS.chart;
                 const dates = [];
                 const datasets = [];
 
@@ -611,7 +353,13 @@
                     if (priceTrends[commodity] && priceTrends[commodity].length > 0) {
                         const prices = priceTrends[commodity];
                         if (dates.length === 0) prices.forEach(p => dates.push(p.date));
-                        datasets.push({ label: commodity, data: prices.map(p => p.price), borderColor: colors[i], fill: false, tension: 0.3 });
+                        datasets.push({ 
+                            label: commodity, 
+                            data: prices.map(p => p.price), 
+                            borderColor: colors[i % colors.length], 
+                            fill: false, 
+                            tension: 0.3 
+                        });
                     }
                 }
 
@@ -619,12 +367,24 @@
                 const ctx1 = document.getElementById('priceTrendChart').getContext('2d');
                 priceChart = new Chart(ctx1, {
                     type: 'line',
-                    data: { labels: dates, datasets: datasets.length ? datasets : [{ label: 'No data', data: [0], borderColor: '#ccc' }] },
-                    options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'top', labels: { font: { size: 10 } } } } }
+                    data: { 
+                        labels: dates, 
+                        datasets: datasets.length ? datasets : [{ label: 'No data', data: [0], borderColor: '#ccc' }] 
+                    },
+                    options: { 
+                        responsive: true, 
+                        maintainAspectRatio: true, 
+                        plugins: { 
+                            legend: { 
+                                position: 'top', 
+                                labels: { font: { size: 10 } } 
+                            } 
+                        } 
+                    }
                 });
 
                 // Risk Trends
-                const riskData = await safeFetch(`${API_URL}/trends/risk?days=14`);
+                const riskData = await safeFetch(`${API_URL}/trends/risk?days=${days}`);
                 let riskTrends = riskData?.trends || {};
 
                 if (Object.keys(riskTrends).length === 0) {
@@ -646,7 +406,13 @@
                     if (riskTrends[country] && riskTrends[country].length > 0) {
                         const risks = riskTrends[country];
                         if (riskDates.length === 0) risks.forEach(r => riskDates.push(r.date));
-                        riskDatasets.push({ label: country, data: risks.map(r => r.risk), borderColor: riskColors[i], fill: false, tension: 0.3 });
+                        riskDatasets.push({ 
+                            label: country, 
+                            data: risks.map(r => r.risk), 
+                            borderColor: riskColors[i % riskColors.length], 
+                            fill: false, 
+                            tension: 0.3 
+                        });
                     }
                 }
 
@@ -654,8 +420,21 @@
                 const ctx2 = document.getElementById('riskTrendChart').getContext('2d');
                 riskChart = new Chart(ctx2, {
                     type: 'line',
-                    data: { labels: riskDates, datasets: riskDatasets.length ? riskDatasets : [{ label: 'No data', data: [0], borderColor: '#ccc' }] },
-                    options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'top', labels: { font: { size: 10 } } } }, scales: { y: { min: 0, max: 100 } } }
+                    data: { 
+                        labels: riskDates, 
+                        datasets: riskDatasets.length ? riskDatasets : [{ label: 'No data', data: [0], borderColor: '#ccc' }] 
+                    },
+                    options: { 
+                        responsive: true, 
+                        maintainAspectRatio: true, 
+                        plugins: { 
+                            legend: { 
+                                position: 'top', 
+                                labels: { font: { size: 10 } } 
+                            } 
+                        }, 
+                        scales: { y: { min: 0, max: 100 } } 
+                    }
                 });
 
             } catch (e) {
@@ -663,21 +442,110 @@
             }
         }
 
-        // ========== LOAD ALL ==========
+        // ============================================
+        // EXPORT FUNCTIONS
+        // ============================================
+        async function exportData(type) {
+            const statusDiv = document.getElementById('exportStatus');
+            statusDiv.textContent = '⏳ Exporting...';
+            
+            try {
+                let endpoint, filename;
+                switch(type) {
+                    case 'events':
+                        endpoint = `${API_URL}/events/export/csv`;
+                        filename = 'events';
+                        break;
+                    case 'recommendations':
+                        endpoint = `${API_URL}/recommendations`;
+                        filename = 'recommendations';
+                        break;
+                    case 'prices':
+                        endpoint = `${API_URL}/prices/live-comprehensive`;
+                        filename = 'prices';
+                        break;
+                    case 'risk':
+                        endpoint = `${API_URL}/country-risk/enhanced`;
+                        filename = 'country-risk';
+                        break;
+                    default:
+                        throw new Error('Unknown export type');
+                }
+                
+                const response = await fetch(endpoint);
+                if (!response.ok) throw new Error('Failed to fetch data');
+                
+                if (type === 'events') {
+                    const blob = await response.blob();
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = `${filename}_${new Date().toISOString().split('T')[0]}.csv`;
+                    link.click();
+                    URL.revokeObjectURL(link.href);
+                } else {
+                    const data = await response.json();
+                    const jsonData = data.success ? data.data : data;
+                    DataExporter.toJSON(jsonData, filename);
+                }
+                
+                statusDiv.textContent = '✅ Export successful!';
+            } catch (error) {
+                console.error('Export error:', error);
+                statusDiv.textContent = '❌ Export failed: ' + error.message;
+            }
+        }
+
+        async function exportAllData() {
+            const statusDiv = document.getElementById('exportStatus');
+            statusDiv.textContent = '⏳ Exporting all data...';
+            
+            try {
+                const [events, recommendations, prices, risk] = await Promise.all([
+                    fetch(`${API_URL}/events?limit=1000`).then(r => r.json()),
+                    fetch(`${API_URL}/recommendations?limit=200`).then(r => r.json()),
+                    fetch(`${API_URL}/prices/live-comprehensive`).then(r => r.json()),
+                    fetch(`${API_URL}/country-risk/enhanced`).then(r => r.json())
+                ]);
+                
+                const allData = {
+                    events: events.success ? events.data : events,
+                    recommendations: recommendations.success ? recommendations.data : recommendations,
+                    prices: prices.success ? prices.data : prices,
+                    risk: risk.success ? risk.data : risk,
+                    exported_at: new Date().toISOString()
+                };
+                
+                DataExporter.toJSON(allData, 'athena-scip-all-data');
+                statusDiv.textContent = '✅ All data exported successfully!';
+            } catch (error) {
+                console.error('Export all error:', error);
+                statusDiv.textContent = '❌ Export all failed: ' + error.message;
+            }
+        }
+
+        // ============================================
+        // LOAD ALL
+        // ============================================
         async function loadAll() {
             await loadStats();
             await loadWeather();
             await loadShipping();
             await loadPrices();
             await loadCountryRisk();
-            await loadTrends();
+            await loadTrends(parseInt(document.getElementById('trendPeriod').value));
             updateTimestamp();
         }
 
-        // ========== EVENT LISTENERS ==========
-        document.getElementById('logoutBtn').addEventListener('click', logout);
+        // ============================================
+        // EVENT LISTENERS
+        // ============================================
+        document.getElementById('trendPeriod').addEventListener('change', function() {
+            loadTrends(parseInt(this.value));
+        });
 
-        // ========== INIT ==========
+        // ============================================
+        // INIT
+        // ============================================
         checkAuth().then(() => {
             loadAll();
             setInterval(loadAll, 60000);
