@@ -2,8 +2,12 @@
  * Athena SCIP - Recommendations Page Logic
  */
 
-const supabaseClient = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
-const API_URL = CONFIG.API_URL;
+// Use global config - DO NOT redeclare API_URL
+const supabaseClient = window.supabaseClient || supabase.createClient(
+    CONFIG.SUPABASE_URL,
+    CONFIG.SUPABASE_KEY
+);
+window.supabaseClient = supabaseClient;
 
 // Cost reference data (real-world estimates)
 const COST_REFERENCE = {
@@ -55,58 +59,11 @@ async function checkAuth() {
     }
 }
 
-// Replace the loadRecommendations function in recommendations.js with this:
-
-async function loadRecommendations() {
-    const container = document.getElementById('recommendationsContainer');
-    if (!container) return;
-    
-    try {
-        const response = await fetch(`${API_URL}/recommendations/improved?limit=10`);
-        const result = await response.json();
-        const data = result.success ? result.data : null;
-        const recommendations = data?.recommendations || [];
-
-        if (!recommendations.length) {
-            container.innerHTML = '<div class="card"><p>No recommendations available</p></div>';
-            return;
-        }
-
-        // Split into two columns
-        const mid = Math.ceil(recommendations.length / 2);
-        const leftCol = recommendations.slice(0, mid);
-        const rightCol = recommendations.slice(mid);
-
-        let leftHTML = '';
-        let rightHTML = '';
-
-        for (let r of leftCol) {
-            leftHTML += generateRecommendationCard(r);
-        }
-        for (let r of rightCol) {
-            rightHTML += generateRecommendationCard(r);
-        }
-
-        container.innerHTML = `
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                <div>${leftHTML}</div>
-                <div>${rightHTML}</div>
-            </div>
-        `;
-        document.getElementById('lastUpdated').innerHTML = `Last updated: ${new Date().toLocaleString()}`;
-
-    } catch (error) {
-        console.error('Recommendations error:', error);
-        container.innerHTML = '<div class="card"><p>Error loading recommendations</p></div>';
-    }
-}
-
 function generateRecommendationCard(r) {
     const urgencyClass = r.urgency === 'immediate' ? 'severity-5' : r.urgency === 'short_term' ? 'severity-4' : 'severity-2';
     const actions = r.actions || ['Monitor situation', 'Review inventory'];
     const commodities = r.affected_commodities || ['General'];
     
-    // Generate cost impact
     let costHTML = '';
     for (let comm of commodities.slice(0, 3)) {
         const costData = COST_REFERENCE[comm];
@@ -116,7 +73,6 @@ function generateRecommendationCard(r) {
         }
     }
     
-    // Get supplier alternatives
     const country = r.location_country || 'Russia';
     const alternatives = SUPPLIER_ALTERNATIVES[country] || SUPPLIER_ALTERNATIVES['Russia'];
     let supplierHTML = '';
@@ -156,21 +112,65 @@ function generateRecommendationCard(r) {
     `;
 }
 
+async function loadRecommendations() {
+    const container = document.getElementById('recommendationsContainer');
+    if (!container) return;
+    
+    try {
+        const response = await fetch(`${CONFIG.API_URL}/recommendations/improved?limit=10`);
+        const result = await response.json();
+        const data = result.success ? result.data : null;
+        const recommendations = data?.recommendations || [];
+
+        if (!recommendations.length) {
+            container.innerHTML = '<div class="card"><p>No recommendations available</p></div>';
+            return;
+        }
+
+        const mid = Math.ceil(recommendations.length / 2);
+        const leftCol = recommendations.slice(0, mid);
+        const rightCol = recommendations.slice(mid);
+
+        let leftHTML = '';
+        let rightHTML = '';
+
+        for (let r of leftCol) {
+            leftHTML += generateRecommendationCard(r);
+        }
+        for (let r of rightCol) {
+            rightHTML += generateRecommendationCard(r);
+        }
+
+        container.innerHTML = `
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div>${leftHTML}</div>
+                <div>${rightHTML}</div>
+            </div>
+        `;
+        document.getElementById('lastUpdated').innerHTML = `Last updated: ${new Date().toLocaleString()}`;
+
+    } catch (error) {
+        console.error('Recommendations error:', error);
+        container.innerHTML = '<div class="card"><p>Error loading recommendations</p></div>';
+    }
+}
+
 // ============================================
-// SCENARIO SIMULATION (Dynamic)
+// SCENARIO SIMULATION
 // ============================================
 async function runScenario(type) {
     const resultDiv = document.getElementById('scenarioResult');
     const titleDiv = document.getElementById('scenarioTitle');
     const contentDiv = document.getElementById('scenarioContent');
     
+    if (!resultDiv) return;
+    
     resultDiv.style.display = 'block';
     titleDiv.textContent = `⏳ Analyzing ${type.replace('_', ' ')} scenario...`;
     contentDiv.innerHTML = 'Loading...';
     
     try {
-        // Fetch real events of this type
-        const eventsResponse = await fetch(`${API_URL}/events?event_type=${type}&limit=20`);
+        const eventsResponse = await fetch(`${CONFIG.API_URL}/events?event_type=${type}&limit=20`);
         const eventsData = await eventsResponse.json();
         const events = eventsData.success ? eventsData.data.events : [];
         
@@ -180,9 +180,8 @@ async function runScenario(type) {
             return;
         }
         
-        // Get affected commodities based on event type
         let affectedCommodities = ['Wheat', 'Natural Gas', 'Oil', 'Steel'];
-        if (type === 'natural_disaster') {
+        if (type === 'natural_disaster' || type === 'weather') {
             affectedCommodities = ['Semiconductors', 'Lithium', 'Nickel', 'Iron Ore'];
         } else if (type === 'sanctions') {
             affectedCommodities = ['Oil', 'Natural Gas', 'Steel', 'Wheat'];
@@ -190,7 +189,6 @@ async function runScenario(type) {
             affectedCommodities = ['Steel', 'Semiconductors', 'Nickel', 'Iron Ore'];
         }
         
-        // Calculate cost impact
         let costImpactHTML = '';
         for (let comm of affectedCommodities.slice(0, 4)) {
             const costData = COST_REFERENCE[comm];
@@ -200,7 +198,6 @@ async function runScenario(type) {
             }
         }
         
-        // Generate supplier alternatives
         let supplierHTML = '';
         const supplierCountries = ['Brazil', 'Australia', 'Qatar', 'United States', 'Norway', 'Saudi Arabia', 'UAE', 'India'];
         for (let i = 0; i < Math.min(3, affectedCommodities.length); i++) {
@@ -210,7 +207,6 @@ async function runScenario(type) {
             supplierHTML += `<li>${affectedCommodities[i]}: ${alt} (Lead time: ${leadTime}d, Cost: +${costIncrease}%)</li>`;
         }
         
-        // Calculate shipping disruption impact
         let shippingImpact = '';
         if (type === 'shipping' || type === 'strike' || type === 'war') {
             const routes = ['Strait of Hormuz', 'Red Sea', 'Panama Canal', 'Suez Canal', 'South China Sea'];
@@ -268,15 +264,7 @@ async function runScenario(type) {
     }
 }
 
-// Weather scenario simulation
-function runWeatherScenario() {
-    runScenario('natural_disaster');
-}
-
-// Shipping scenario simulation
-function runShippingScenario() {
-    runScenario('shipping');
-}
-
 // Initialize
-checkAuth().then(loadRecommendations);
+document.addEventListener('DOMContentLoaded', function() {
+    checkAuth().then(loadRecommendations);
+});

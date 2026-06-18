@@ -2,8 +2,12 @@
  * Athena SCIP - Events Page Logic
  */
 
-const supabaseClient = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
-const API_URL = CONFIG.API_URL;
+// Use global config
+const supabaseClient = window.supabaseClient || supabase.createClient(
+    CONFIG.SUPABASE_URL,
+    CONFIG.SUPABASE_KEY
+);
+window.supabaseClient = supabaseClient;
 
 async function checkAuth() {
     const { data: { session } } = await supabaseClient.auth.getSession();
@@ -16,19 +20,16 @@ async function checkAuth() {
 
 async function loadEvents() {
     try {
-        // Fetch ALL events without limit to get complete count
-        const response = await fetch(`${API_URL}/events?limit=1000`);
+        const response = await fetch(`${CONFIG.API_URL}/events?limit=1000`);
         const result = await response.json();
         const data = result.success ? result.data : null;
         const events = data?.events || [];
 
-        // Update summary
         document.getElementById('totalEvents').innerText = events.length;
         document.getElementById('warCount').innerText = events.filter(e => e.event_type === 'war').length;
         document.getElementById('disasterCount').innerText = events.filter(e => e.event_type === 'natural_disaster').length;
         document.getElementById('otherCount').innerText = events.filter(e => !['war', 'natural_disaster'].includes(e.event_type)).length;
 
-        // Build table
         if (!events.length) {
             document.getElementById('eventsContainer').innerHTML = '<p>No events found</p>';
             return;
@@ -73,5 +74,14 @@ async function loadEvents() {
     }
 }
 
-// Initialize
-checkAuth().then(loadEvents);
+document.addEventListener('DOMContentLoaded', function() {
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', function() {
+            supabaseClient.auth.signOut().then(() => {
+                window.location.href = 'secure-login.html';
+            });
+        });
+    }
+    checkAuth().then(loadEvents);
+});

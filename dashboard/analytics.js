@@ -2,18 +2,12 @@
  * Athena SCIP - Analytics Page Logic
  */
 
-// Use global or local config
-const _CONFIG = window.CONFIG || CONFIG;
-const API_URL = _CONFIG.API_URL || 'https://athena-scip-api.onrender.com';
-
-// Supabase client
-if (typeof window.supabaseClient === 'undefined') {
-    window.supabaseClient = supabase.createClient(
-        _CONFIG.SUPABASE_URL || 'https://catpprgdbvenutyyjqbx.supabase.co',
-        _CONFIG.SUPABASE_KEY || 'sb_publishable_ykiqckKEQw2m8XXvX4cGnQ_5ijzb7Py'
-    );
-}
-const supabaseClient = window.supabaseClient;
+// Use global config - DO NOT redeclare API_URL
+const supabaseClient = window.supabaseClient || supabase.createClient(
+    CONFIG.SUPABASE_URL,
+    CONFIG.SUPABASE_KEY
+);
+window.supabaseClient = supabaseClient;
 
 let dailyChart = null, typeChart = null, countryChart = null;
 
@@ -26,12 +20,10 @@ async function checkAuth() {
     }
 }
 
-// ... rest of the file remains the same ...
-
 async function loadAnalytics() {
     try {
         // Fetch all events
-        const response = await fetch(`${API_URL}/events?limit=1000`);
+        const response = await fetch(`${CONFIG.API_URL}/events?limit=1000`);
         const result = await response.json();
         const data = result.success ? result.data : null;
         const events = data?.events || [];
@@ -166,5 +158,7 @@ async function loadAnalytics() {
     }
 }
 
-// Initialize
-checkAuth().then(loadAnalytics);
+// Initialize - check auth first, then load data
+document.addEventListener('DOMContentLoaded', function() {
+    checkAuth().then(loadAnalytics);
+});

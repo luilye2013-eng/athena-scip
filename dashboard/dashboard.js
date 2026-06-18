@@ -1,27 +1,14 @@
 /**
  * Athena SCIP - Main Dashboard Logic
- * External JavaScript for all dashboard pages
+ * External JavaScript for dashboard home page
  */
 
-// Check if CONFIG exists
-if (typeof CONFIG === 'undefined') {
-    console.error('CONFIG not loaded. Please check config.js');
-}
-
-// Use window.CONFIG if available, or CONFIG directly
-const _CONFIG = window.CONFIG || CONFIG;
-const API_URL = _CONFIG.API_URL || 'https://athena-scip-api.onrender.com';
-
-// Supabase client - check if already created
-if (typeof window.supabaseClient === 'undefined') {
-    window.supabaseClient = supabase.createClient(
-        _CONFIG.SUPABASE_URL || 'https://catpprgdbvenutyyjqbx.supabase.co',
-        _CONFIG.SUPABASE_KEY || 'sb_publishable_ykiqckKEQw2m8XXvX4cGnQ_5ijzb7Py'
-    );
-}
-const supabaseClient = window.supabaseClient;
-
-// ... rest of the file ...
+// Use global config
+const supabaseClient = window.supabaseClient || supabase.createClient(
+    CONFIG.SUPABASE_URL,
+    CONFIG.SUPABASE_KEY
+);
+window.supabaseClient = supabaseClient;
 
 let priceChart = null, riskChart = null, pieChart = null;
 let allPrices = [];
@@ -41,9 +28,6 @@ async function logout() {
     window.location.href = 'secure-login.html';
 }
 
-// ============================================
-// HELPER FUNCTIONS
-// ============================================
 async function safeFetch(url) {
     try {
         const response = await fetch(url);
@@ -69,7 +53,7 @@ async function loadWeather() {
     if (!container) return;
     
     try {
-        const data = await safeFetch(`${API_URL}/weather/alerts`);
+        const data = await safeFetch(`${CONFIG.API_URL}/weather/alerts`);
         const alerts = data?.alerts || [];
         if (!alerts.length) {
             container.innerHTML = '<p>No active alerts</p>';
@@ -108,7 +92,7 @@ async function loadShipping() {
     if (!container) return;
     
     try {
-        const data = await safeFetch(`${API_URL}/shipping/disruptions`);
+        const data = await safeFetch(`${CONFIG.API_URL}/shipping/disruptions`);
         const disruptions = data?.disruptions || [];
         const countEl = document.getElementById('shippingCount');
         if (countEl) countEl.innerText = disruptions.length;
@@ -149,7 +133,7 @@ async function loadPrices() {
     if (!container) return;
     
     try {
-        const data = await safeFetch(`${API_URL}/prices/live-comprehensive`);
+        const data = await safeFetch(`${CONFIG.API_URL}/prices/live-comprehensive`);
         allPrices = data?.prices || [];
         displayPrices();
     } catch (e) {
@@ -203,11 +187,11 @@ function loadMorePrices() {
 // ============================================
 async function loadStats() {
     try {
-        const summary = await safeFetch(`${API_URL}/events/summary`);
+        const summary = await safeFetch(`${CONFIG.API_URL}/events/summary`);
         const totalEl = document.getElementById('totalEvents');
         if (totalEl) totalEl.innerText = summary?.total_events || 0;
         
-        const data = await safeFetch(`${API_URL}/events?limit=500`);
+        const data = await safeFetch(`${CONFIG.API_URL}/events?limit=500`);
         const events = data?.events || [];
         const warEl = document.getElementById('warEvents');
         if (warEl) warEl.innerText = events.filter(e => e.event_type === 'war').length;
@@ -215,7 +199,7 @@ async function loadStats() {
         const disasterEl = document.getElementById('disasterEvents');
         if (disasterEl) disasterEl.innerText = events.filter(e => e.event_type === 'natural_disaster').length;
         
-        const recSummary = await safeFetch(`${API_URL}/recommendations/summary`);
+        const recSummary = await safeFetch(`${CONFIG.API_URL}/recommendations/summary`);
         const recEl = document.getElementById('recCount');
         if (recEl) recEl.innerText = recSummary?.total_recommendations || 0;
     } catch (e) {
@@ -231,7 +215,7 @@ async function loadCountryRisk() {
     if (!container) return;
     
     try {
-        const data = await safeFetch(`${API_URL}/country-risk/enhanced`);
+        const data = await safeFetch(`${CONFIG.API_URL}/country-risk/enhanced`);
         const countries = data?.countries || [];
         if (!countries.length) {
             container.innerHTML = '<p>No risk data</p>';
@@ -249,7 +233,6 @@ async function loadCountryRisk() {
         gridHtml += '</div>';
         container.innerHTML = gridHtml;
 
-        // Pie chart
         const ctx = document.getElementById('riskPieChart');
         if (ctx) {
             if (window.riskPieChart) window.riskPieChart.destroy();
@@ -284,8 +267,7 @@ async function loadCountryRisk() {
 // ============================================
 async function loadTrends(days = 14) {
     try {
-        // Price Trends
-        const priceData = await safeFetch(`${API_URL}/trends/prices?days=${days}`);
+        const priceData = await safeFetch(`${CONFIG.API_URL}/trends/prices?days=${days}`);
         let priceTrends = priceData?.trends || {};
 
         if (Object.keys(priceTrends).length === 0) {
@@ -341,8 +323,7 @@ async function loadTrends(days = 14) {
             });
         }
 
-        // Risk Trends
-        const riskData = await safeFetch(`${API_URL}/trends/risk?days=${days}`);
+        const riskData = await safeFetch(`${CONFIG.API_URL}/trends/risk?days=${days}`);
         let riskTrends = riskData?.trends || {};
 
         if (Object.keys(riskTrends).length === 0) {
@@ -415,19 +396,19 @@ async function exportData(type) {
         let endpoint, filename;
         switch(type) {
             case 'events':
-                endpoint = `${API_URL}/events/export/csv`;
+                endpoint = `${CONFIG.API_URL}/events/export/csv`;
                 filename = 'events';
                 break;
             case 'recommendations':
-                endpoint = `${API_URL}/recommendations`;
+                endpoint = `${CONFIG.API_URL}/recommendations`;
                 filename = 'recommendations';
                 break;
             case 'prices':
-                endpoint = `${API_URL}/prices/live-comprehensive`;
+                endpoint = `${CONFIG.API_URL}/prices/live-comprehensive`;
                 filename = 'prices';
                 break;
             case 'risk':
-                endpoint = `${API_URL}/country-risk/enhanced`;
+                endpoint = `${CONFIG.API_URL}/country-risk/enhanced`;
                 filename = 'country-risk';
                 break;
             default:
@@ -447,7 +428,18 @@ async function exportData(type) {
         } else {
             const data = await response.json();
             const jsonData = data.success ? data.data : data;
-            DataExporter.toJSON(jsonData, filename);
+            if (window.DataExporter) {
+                window.DataExporter.toJSON(jsonData, filename);
+            } else {
+                // Fallback
+                const jsonContent = JSON.stringify(jsonData, null, 2);
+                const blob = new Blob([jsonContent], { type: 'application/json;charset=utf-8' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `${filename}_${new Date().toISOString().split('T')[0]}.json`;
+                link.click();
+                URL.revokeObjectURL(link.href);
+            }
         }
         
         statusDiv.textContent = '✅ Export successful!';
@@ -465,10 +457,10 @@ async function exportAllData() {
     
     try {
         const [events, recommendations, prices, risk] = await Promise.all([
-            fetch(`${API_URL}/events?limit=1000`).then(r => r.json()),
-            fetch(`${API_URL}/recommendations?limit=200`).then(r => r.json()),
-            fetch(`${API_URL}/prices/live-comprehensive`).then(r => r.json()),
-            fetch(`${API_URL}/country-risk/enhanced`).then(r => r.json())
+            fetch(`${CONFIG.API_URL}/events?limit=1000`).then(r => r.json()),
+            fetch(`${CONFIG.API_URL}/recommendations?limit=200`).then(r => r.json()),
+            fetch(`${CONFIG.API_URL}/prices/live-comprehensive`).then(r => r.json()),
+            fetch(`${CONFIG.API_URL}/country-risk/enhanced`).then(r => r.json())
         ]);
         
         const allData = {
@@ -479,7 +471,17 @@ async function exportAllData() {
             exported_at: new Date().toISOString()
         };
         
-        DataExporter.toJSON(allData, 'athena-scip-all-data');
+        if (window.DataExporter) {
+            window.DataExporter.toJSON(allData, 'athena-scip-all-data');
+        } else {
+            const jsonContent = JSON.stringify(allData, null, 2);
+            const blob = new Blob([jsonContent], { type: 'application/json;charset=utf-8' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `athena-scip-all-data_${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            URL.revokeObjectURL(link.href);
+        }
         statusDiv.textContent = '✅ All data exported successfully!';
     } catch (error) {
         console.error('Export all error:', error);
@@ -503,3 +505,24 @@ async function loadAll() {
     
     updateTimestamp();
 }
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) logoutBtn.addEventListener('click', logout);
+    
+    const showMoreBtn = document.getElementById('showMorePrices');
+    if (showMoreBtn) showMoreBtn.addEventListener('click', loadMorePrices);
+    
+    const trendPeriod = document.getElementById('trendPeriod');
+    if (trendPeriod) {
+        trendPeriod.addEventListener('change', function() {
+            loadTrends(parseInt(this.value));
+        });
+    }
+    
+    checkAuth().then(() => {
+        loadAll();
+        setInterval(loadAll, 60000);
+    });
+});
