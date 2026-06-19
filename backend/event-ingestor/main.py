@@ -16,6 +16,13 @@ import logging
 import time
 import hashlib
 import sys
+from data_quality import (
+    is_supply_chain_related,
+    enrich_location,
+    classify_event_type,
+    calculate_supply_chain_impact,
+    SUPPLY_CHAIN_EVENT_TYPES
+)
 
 # ============================================
 # CONFIGURATION
@@ -341,24 +348,41 @@ def run_ingestion():
     logger.info("\n📰 Fetching News Events...")
     news_events = fetch_news_events()
     for event in news_events:
-        event_type = classify_event(event["title"], event.get("description", ""))
-        severity = calculate_severity(event_type, event["title"])
-        location = extract_country(event["title"] + " " + (event.get("description") or ""))
-
-        event_data = {
-            "external_id": hashlib.md5(event["title"].encode()).hexdigest()[:16],
-            "source": event.get("source", "news"),
-            "title": event["title"],
-            "description": event.get("description", ""),
-            "event_type": event_type,
-            "severity": severity,
-            "location_country": location,
-            "start_date": event.get("published_at"),
-            "confidence_score": 0.7,
-            "raw_data": json.dumps(event)
-        }
-        if store_item("events", event_data, "external_id"):
-            total_stored += 1
+    # Enrich location
+    location = enrich_location(event["title"], event.get("description", ""))
+    
+    # Classify event type
+    event_type = classify_event_type(event["title"], event.get("description", ""))
+    
+    # Check if supply chain related
+    if not is_supply_chain_related(event["title"], event.get("description", "")):
+        # Skip non-supply-chain events to improve data quality
+        logger.debug(f"⏭️ Skipping non-supply-chain event: {event['title'][:50]}...")
+        continue
+    
+    # Calculate severity (boosted for supply chain impact)
+    base_severity = calculate_severity(event_type, event["title"])
+    
+    # Calculate supply chain impact
+    impact = calculate_supply_chain_impact(event["title"], event.get("description", ""), base_severity)
+    severity = min(5, max(1, int(impact['impact_score'] / 20) + 1))
+    
+    event_data = {
+        "external_id": hashlib.md5(event["title"].encode()).hexdigest()[:16],
+        "source": event.get("source", "news"),
+        "title": event["title"],
+        "description": event.get("description", ""),
+        "event_type": event_type,
+        "severity": severity,
+        "location_country": location,
+        "start_date": event.get("published_at"),
+        "confidence_score": 0.7,
+        "affected_areas": impact['affected_areas'],
+        "supply_chain_impact_score": impact['impact_score'],
+        "raw_data": json.dumps(event)
+    }
+    if store_item("events", event_data, "external_id"):
+        total_stored += 1
 
     # 2. Earthquakes
     logger.info("\n🌍 Fetching Earthquakes...")

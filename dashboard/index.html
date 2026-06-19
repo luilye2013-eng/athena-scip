@@ -52,13 +52,16 @@
                 <h3>🚢 Shipping Disruptions</h3>
                 <div id="shippingContainer" class="scrollable">Loading...</div>
             </div>
-            <div class="card">
-                <h3>💰 Commodity Prices</h3>
-                <div id="pricesContainer" class="scrollable">Loading...</div>
-                <button id="showMorePrices" onclick="loadMorePrices()" style="margin-top: 10px; padding: 6px 12px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; display: none;">
-                    Show More
-                </button>
-            </div>
+  <div class="card">
+    <h3>💰 Commodity Prices</h3>
+    <div id="pricesContainer" class="scrollable">Loading...</div>
+    <div style="font-size: 10px; color: #6b7280; margin-top: 8px; text-align: right;">
+        📊 Source: Yahoo Finance (live data)
+    </div>
+    <button id="showMorePrices" onclick="loadMorePrices()" style="margin-top: 10px; padding: 6px 12px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; display: none;">
+        Show More
+    </button>
+</div>
         </div>
 
         <!-- Charts -->
@@ -104,10 +107,17 @@
         </div>
 
         <!-- Disclaimer -->
-        <div class="disclaimer">
-            ⚠️ <strong>Data Accuracy Notice:</strong> All data is sourced from third-party feeds. For critical decisions, verify with primary sources.
-        </div>
-    </div>
+        <div class="disclaimer" style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; border-radius: 8px; margin-top: 20px;">
+    <strong>⚠️ Data Quality & Disclaimer Notice</strong>
+    <ul style="font-size: 11px; color: #92400e; margin-top: 8px; padding-left: 20px; line-height: 1.6;">
+        <li><strong>Data Sources:</strong> This platform aggregates data from third-party RSS feeds (BBC, CNN, NPR, Al Jazeera), USGS (earthquakes), NOAA (weather alerts), and Open-Meteo (global weather). Commodity prices are sourced from Yahoo Finance.</li>
+        <li><strong>Data Quality:</strong> Location data may be incomplete or inferred from event descriptions. Events classified as "Unknown" location or "Other" type have been flagged for review. Supply chain impact scores are algorithmic estimates and should be verified.</li>
+        <li><strong>Limitations:</strong> The system automatically filters events that are not supply chain related. However, some relevant events may be missed, and some non-relevant events may be included.</li>
+        <li><strong>Purpose:</strong> This platform provides informational analysis and is NOT a substitute for professional supply chain risk assessment or decision-making.</li>
+        <li><strong>Liability:</strong> Athena SCIP and its developers assume no liability for decisions made based on this data. Users should independently verify all critical information.</li>
+        <li><strong>Accuracy:</strong> While we strive for accuracy, we do not guarantee the completeness, timeliness, or accuracy of any data presented.</li>
+    </ul>
+</div>
 
    <!-- External JavaScript - ORDER MATTERS! -->
     <script src="config.js"></script>

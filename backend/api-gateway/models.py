@@ -3,7 +3,7 @@ Athena SCIP - Pydantic v2 Models
 Industry-standard response models for API documentation
 """
 from datetime import datetime
-from typing import Optional, Any, List, Dict
+from typing import Optional, List, Dict, Union
 from pydantic import BaseModel, Field, ConfigDict
 
 class StandardResponse(BaseModel):
@@ -12,7 +12,7 @@ class StandardResponse(BaseModel):
     All endpoints return this structure for consistency.
     """
     model_config = ConfigDict(
-        arbitrary_types_allowed=True,
+        arbitrary_types_allowed=False,
         json_schema_extra={
             "example": {
                 "success": True,
@@ -27,7 +27,7 @@ class StandardResponse(BaseModel):
         default=True,
         description="Indicates if the operation was successful"
     )
-    data: Optional[Any] = Field(
+    data: Optional[Union[dict, list, str, int, float, bool]] = Field(
         default=None,
         description="The response data payload"
     )
@@ -39,61 +39,3 @@ class StandardResponse(BaseModel):
         default_factory=lambda: datetime.utcnow().isoformat(),
         description="ISO 8601 timestamp of the response"
     )
-
-class EventResponse(BaseModel):
-    """Event data structure"""
-    model_config = ConfigDict(from_attributes=True)
-    
-    id: str
-    title: str
-    description: Optional[str] = None
-    event_type: str
-    severity: int
-    location_country: Optional[str] = None
-    location_city: Optional[str] = None
-    created_at: str
-    confidence_score: Optional[float] = None
-    source: Optional[str] = None
-
-class EventsListResponse(BaseModel):
-    """Paginated events list response"""
-    events: List[EventResponse]
-    count: int
-    limit: int
-    offset: int
-
-class RecommendationResponse(BaseModel):
-    """Recommendation data structure"""
-    model_config = ConfigDict(from_attributes=True)
-    
-    id: str
-    action_type: str
-    urgency: str
-    commodity_id: Optional[str] = None
-    supplier_id: Optional[str] = None
-    estimated_cost_impact: Optional[float] = None
-    event_title: Optional[str] = None
-    actions: Optional[List[str]] = None
-    affected_commodities: Optional[List[str]] = None
-
-class PriceResponse(BaseModel):
-    """Commodity price data structure"""
-    commodity_name: str
-    price_usd: float
-    unit: str
-    change_24h: float
-    source: str
-
-class CountryRiskResponse(BaseModel):
-    """Country risk data structure"""
-    country: str
-    risk_score: int
-    risk_level: str
-    events: int
-    war: int
-    disaster: int
-
-class HealthResponse(BaseModel):
-    """Health check response"""
-    status: str
-    database: bool

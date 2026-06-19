@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Data Quality Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="config.js"></script>
+    <script src="utils.js"></script>
+    <script src="supabase-client.js"></script>
+</head>
+<body>
+    <div class="header">
+        <h1>📊 Data Quality Dashboard</h1>
+        <div class="nav">
+            <a href="index.html" class="nav-btn">🏠 Home</a>
+            <a href="quality.html" class="nav-btn active">📊 Quality</a>
+        </div>
+    </div>
+    <div class="container">
+        <div id="qualityMetrics" class="card">
+            <h3>📊 Data Quality Metrics</h3>
+            <div id="qualityData">Loading...</div>
+        </div>
+    </div>
+    <script>
+        const supabaseClient = window.supabaseClient;
+        
+        async function loadQualityMetrics() {
+            try {
+                // Get total events
+                const totalRes = await supabaseClient.from('events').select('id', { count: 'exact' });
+                const total = totalRes.count || 0;
+                
+                // Get events with unknown location
+                const unknownRes = await supabaseClient.from('events')
+                    .select('id', { count: 'exact' })
+                    .eq('location_country', 'Unknown');
+                const unknown = unknownRes.count || 0;
+                
+                // Get non-supply-chain events
+                const nonSCRes = await supabaseClient.from('events')
+                    .select('id', { count: 'exact' })
+                    .eq('is_supply_chain_related', false);
+                const nonSC = nonSCRes.count || 0;
+                
+                // Get events by type
+                const typeRes = await supabaseClient.from('events')
+                    .select('event_type, id')
+                    .not('event_type', 'is', null);
+                
+                const typeCounts = {};
+                typeRes.data.forEach(e => {
+                    typeCounts[e.event_type] = (typeCounts[e.event_type] || 0) + 1;
+                });
+                
+                document.getElementById('qualityData').innerHTML = `
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px;">
+                        <div class="stat-card"><div class="stat-number">${total}</div><div class="stat-label">Total Events</div></div>
+                        <div class="stat-card"><div class="stat-number">${unknown}</div><div class="stat-label">Unknown Location (${((unknown/total)*100).toFixed(1)}%)</div></div>
+                        <div class="stat-card"><div class="stat-number">${nonSC}</div><div class="stat-label">Non-Supply Chain (${((nonSC/total)*100).toFixed(1)}%)</div></div>
+                        <div class="stat-card"><div class="stat-number">${total - unknown - nonSC}</div><div class="stat-label">Quality Events (${((total - unknown - nonSC)/total*100).toFixed(1)}%)</div></div>
+                    </div>
+                    <div style="margin-top: 15px;">
+                        <h4>Event Type Distribution</h4>
+                        <ul style="columns: 2; font-size: 13px;">
+                            ${Object.entries(typeCounts).map(([type, count]) => 
+                                `<li><strong>${type}:</strong> ${count}</li>`
+                            ).join('')}
+                        </ul>
+                    </div>
+                    <div style="margin-top: 15px; background: #fef3c7; padding: 10px; border-radius: 6px; font-size: 12px;">
+                        <strong>💡 Data Quality Tip:</strong> 
+                        Improve data quality by reviewing events with unknown locations or non-supply-chain classifications.
+                        Consider adding more location keywords to the enrichment module.
+                    </div>
+                `;
+            } catch (e) {
+                document.getElementById('qualityData').innerHTML = '<p>Error loading quality metrics</p>';
+            }
+        }
+        
+        loadQualityMetrics();
+    </script>
+</body>
+</html>
