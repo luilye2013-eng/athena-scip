@@ -359,7 +359,7 @@ def fetch_shipping_disruptions():
 
 def run_ingestion():
     # 1. News Events
-logger.info("\n📰 Fetching News Events...")
+    logger.info("\n📰 Fetching News Events...")
 news_events = fetch_news_events()
 for event in news_events:
     # Enrich location
