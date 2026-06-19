@@ -182,7 +182,7 @@ LOCATION_KEYWORDS = {
     
     'Kuwait': ['kuwait', 'kuwait city', 'salmiya', 'hawalli', 'fahaheel', 'jabriya', 'farwaniya', 'mubarak al-kabeer'],
     
-    'Oman': ['oman', 'muscat', 'salalah', 'suhar', 'nizwa', 'saham', 'ibri', 'sama'il'],
+    'Oman': ['oman', 'muscat', 'salalah', 'suhar', 'nizwa', 'saham', 'ibri', 'samail'],
     
     'Bahrain': ['bahrain', 'manama', 'muharraq', 'rifa', 'hamad town', 'sitrah', 'budaiya'],
     
