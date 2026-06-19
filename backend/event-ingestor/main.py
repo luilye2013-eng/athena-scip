@@ -377,22 +377,22 @@ def run_ingestion():
     news_events = fetch_news_events()
     for event in news_events:
     # Enrich location
-    location = enrich_location(event["title"], event.get("description", ""))
+        location = enrich_location(event["title"], event.get("description", ""))
     
     # Classify event type
-    event_type = classify_event_type(event["title"], event.get("description", ""))
+        event_type = classify_event_type(event["title"], event.get("description", ""))
     
     # Check if supply chain related
-    if not is_supply_chain_related(event["title"], event.get("description", "")):
+        if not is_supply_chain_related(event["title"], event.get("description", "")):
         # Skip non-supply-chain events to improve data quality
         logger.debug(f"⏭️ Skipping non-supply-chain event: {event['title'][:50]}...")
-        continue
+                continue
     
     # Calculate severity (boosted for supply chain impact)
-    base_severity = calculate_severity(event_type, event["title"])
+        base_severity = calculate_severity(event_type, event["title"])
     
     # Calculate supply chain impact
-    impact = calculate_supply_chain_impact(event["title"], event.get("description", ""), base_severity)
+        impact = calculate_supply_chain_impact(event["title"], event.get("description", ""), base_severity)
     severity = min(5, max(1, int(impact['impact_score'] / 20) + 1))
     
     event_data = {
