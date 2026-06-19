@@ -131,6 +131,34 @@ def store_item(table, data, id_field="title"):
         logger.error(f"❌ Error storing to {table}: {e}")
         return False
 
+# Calculate supply chain impact score
+def calculate_impact_score(event_type, severity, title, description):
+    """Calculate supply chain impact score (0-100)"""
+    text = (title + " " + (description or "")).lower()
+    
+    # Base score from severity
+    base_score = severity * 10
+    
+    # Bonus for supply chain keywords
+    bonus = 0
+    supply_chain_bonus = {
+        'port': 15, 'canal': 20, 'strait': 20, 'shipping': 15,
+        'oil': 15, 'gas': 15, 'semiconductor': 20, 'chip': 15,
+        'factory': 10, 'plant': 10, 'warehouse': 10,
+        'strike': 15, 'sanctions': 20, 'embargo': 20,
+        'shortage': 15, 'disruption': 10, 'delay': 10
+    }
+    
+    for keyword, value in supply_chain_bonus.items():
+        if keyword in text:
+            bonus += value
+    
+    # Cap at 100
+    return min(100, base_score + bonus)
+
+# Use in event processing
+impact_score = calculate_impact_score(event_type, severity, event["title"], event.get("description", ""))
+
 # ============================================
 # FETCH FUNCTIONS
 # ============================================

@@ -71,95 +71,107 @@
             window.location.href = 'secure-login.html';
         });
 
-        async function loadQualityMetrics() {
-            try {
-                // Get total events
-                const totalRes = await supabaseClient.from('events').select('id', { count: 'exact' });
-                const total = totalRes.count || 0;
-                
-                // Get events with unknown location
-                const unknownRes = await supabaseClient.from('events')
-                    .select('id', { count: 'exact' })
-                    .eq('location_country', 'Unknown');
-                const unknown = unknownRes.count || 0;
-                
-                // Get events by type
-                const typeRes = await supabaseClient.from('events')
-                    .select('event_type, id')
-                    .not('event_type', 'is', null);
-                
-                const typeCounts = {};
-                if (typeRes.data) {
-                    typeRes.data.forEach(e => {
-                        const type = e.event_type || 'other';
-                        typeCounts[type] = (typeCounts[type] || 0) + 1;
-                    });
-                }
-                
-                // Get events with supply_chain_impact_score
-                const impactRes = await supabaseClient.from('events')
-                    .select('supply_chain_impact_score, id')
-                    .not('supply_chain_impact_score', 'is', null);
-                
-                let avgImpact = 0;
-                if (impactRes.data && impactRes.data.length > 0) {
-                    const sum = impactRes.data.reduce((acc, e) => acc + (e.supply_chain_impact_score || 0), 0);
-                    avgImpact = Math.round(sum / impactRes.data.length);
-                }
-
-                document.getElementById('qualityData').innerHTML = `
-                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px;">
-                        <div class="stat-card">
-                            <div class="stat-number">${total}</div>
-                            <div class="stat-label">Total Events</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-number" style="color: #f97316;">${unknown}</div>
-                            <div class="stat-label">Unknown Location (${total > 0 ? ((unknown/total)*100).toFixed(1) : 0}%)</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-number" style="color: #3b82f6;">${total - unknown}</div>
-                            <div class="stat-label">Known Locations</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-number" style="color: #22c55e;">${avgImpact}</div>
-                            <div class="stat-label">Avg Supply Chain Impact</div>
-                        </div>
-                    </div>
-                    <div style="margin-top: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                        <div>
-                            <h4>📊 Event Type Distribution</h4>
-                            <ul style="list-style: none; padding: 0; font-size: 13px;">
-                                ${Object.entries(typeCounts).map(([type, count]) => 
-                                    `<li style="padding: 4px 0; border-bottom: 1px solid #e5e7eb;">
-                                        <strong>${type.replace('_', ' ')}:</strong> 
-                                        <span style="float: right;">${count} (${total > 0 ? ((count/total)*100).toFixed(1) : 0}%)</span>
-                                    </li>`
-                                ).join('')}
-                            </ul>
-                        </div>
-                        <div>
-                            <h4>💡 Quality Recommendations</h4>
-                            <ul style="font-size: 12px; color: #4b5563; padding-left: 20px; line-height: 1.8;">
-                                <li>${unknown > 0 ? `⚠️ ${unknown} events need location enrichment` : '✅ All events have location data'}</li>
-                                <li>${Object.keys(typeCounts).length > 5 ? `📊 ${Object.keys(typeCounts).length} event types detected` : '✅ Good event type diversity'}</li>
-                                <li>${avgImpact > 0 ? `📈 Average supply chain impact score: ${avgImpact}` : '⚠️ No impact scores calculated'}</li>
-                            </ul>
-                            <div style="margin-top: 10px; background: #eff6ff; padding: 10px; border-radius: 6px; font-size: 12px;">
-                                <strong>💡 Tip:</strong> 
-                                ${unknown > 20 ? 'Review events with unknown locations. Consider adding more location keywords to the enrichment module.' : 'Location data quality is good!'}
-                            </div>
-                        </div>
-                    </div>
-                `;
-                
-                document.getElementById('lastUpdated').innerHTML = `Last updated: ${new Date().toLocaleString()}`;
-
-            } catch (error) {
-                console.error('Quality metrics error:', error);
-                document.getElementById('qualityData').innerHTML = '<p style="color: #dc2626;">Error loading quality metrics. Please check console for details.</p>';
-            }
+async function loadQualityMetrics() {
+    try {
+        // Get total events
+        const totalRes = await supabaseClient.from('events').select('id', { count: 'exact' });
+        const total = totalRes.count || 0;
+        
+        // Get events with unknown location - IMPROVED QUERY
+        const unknownRes = await supabaseClient.from('events')
+            .select('id', { count: 'exact' })
+            .or('location_country.is.null,location_country.eq.Unknown,location_country.eq.unknown,location_country.eq.N/A,location_country.eq.null,location_country.eq.Unknown Location');
+        const unknown = unknownRes.count || 0;
+        
+        // Get events by type - with proper counting
+        const typeRes = await supabaseClient.from('events')
+            .select('event_type, id')
+            .not('event_type', 'is', null);
+        
+        const typeCounts = {};
+        if (typeRes.data) {
+            typeRes.data.forEach(e => {
+                const type = e.event_type || 'other';
+                typeCounts[type] = (typeCounts[type] || 0) + 1;
+            });
         }
+        
+        // Get events with supply_chain_impact_score
+        const impactRes = await supabaseClient.from('events')
+            .select('supply_chain_impact_score, id')
+            .not('supply_chain_impact_score', 'is', null);
+        
+        let avgImpact = 0;
+        if (impactRes.data && impactRes.data.length > 0) {
+            const sum = impactRes.data.reduce((acc, e) => acc + (e.supply_chain_impact_score || 0), 0);
+            avgImpact = Math.round(sum / impactRes.data.length);
+        }
+        
+        // Get events with location known (for quality score)
+        const known = total - unknown;
+        const qualityScore = total > 0 ? Math.round((known / total) * 100) : 0;
+        
+        document.getElementById('qualityData').innerHTML = `
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px;">
+                <div class="stat-card">
+                    <div class="stat-number">${total}</div>
+                    <div class="stat-label">Total Events</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" style="color: ${unknown > 50 ? '#dc2626' : unknown > 20 ? '#f97316' : '#22c55e'};">${unknown}</div>
+                    <div class="stat-label">Unknown Location (${total > 0 ? ((unknown/total)*100).toFixed(1) : 0}%)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" style="color: #3b82f6;">${known}</div>
+                    <div class="stat-label">Known Locations</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" style="color: ${qualityScore > 80 ? '#22c55e' : qualityScore > 50 ? '#f97316' : '#dc2626'};">${qualityScore}%</div>
+                    <div class="stat-label">Location Quality Score</div>
+                </div>
+            </div>
+            <div style="margin-top: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div>
+                    <h4>📊 Event Type Distribution</h4>
+                    <ul style="list-style: none; padding: 0; font-size: 13px;">
+                        ${Object.entries(typeCounts).sort((a, b) => b[1] - a[1]).map(([type, count]) => 
+                            `<li style="padding: 4px 0; border-bottom: 1px solid #e5e7eb;">
+                                <strong>${type.replace('_', ' ')}:</strong> 
+                                <span style="float: right;">${count} (${total > 0 ? ((count/total)*100).toFixed(1) : 0}%)</span>
+                            </li>`
+                        ).join('')}
+                    </ul>
+                    <div style="margin-top: 10px; font-size: 12px; color: #6b7280;">
+                        <strong>Event Type Diversity:</strong> ${Object.keys(typeCounts).length} types detected
+                    </div>
+                </div>
+                <div>
+                    <h4>💡 Quality Recommendations</h4>
+                    <ul style="font-size: 12px; color: #4b5563; padding-left: 20px; line-height: 1.8;">
+                        <li>${unknown > 0 ? `⚠️ ${unknown} events (${((unknown/total)*100).toFixed(1)}%) need location enrichment` : '✅ All events have location data'}</li>
+                        <li>${Object.keys(typeCounts).length > 5 ? `📊 ${Object.keys(typeCounts).length} event types detected` : '✅ Good event type diversity'}</li>
+                        <li>${avgImpact > 0 ? `📈 Average supply chain impact score: ${avgImpact}` : '⚠️ No impact scores calculated'}</li>
+                        <li>${qualityScore > 80 ? '✅ Good location quality' : qualityScore > 50 ? '⚠️ Moderate location quality - improve enrichment' : '❌ Poor location quality - needs immediate attention'}</li>
+                    </ul>
+                    <div style="margin-top: 10px; background: ${unknown > 50 ? '#fef2f2' : unknown > 20 ? '#fef3c7' : '#eff6ff'}; padding: 10px; border-radius: 6px; font-size: 12px;">
+                        <strong>💡 Tip:</strong> 
+                        ${unknown > 50 
+                            ? '⚠️ High number of unknown locations. Add more location keywords to data_quality.py and rerun ingestion.'
+                            : unknown > 20 
+                            ? '📝 Review events with unknown locations. Consider adding more location keywords.'
+                            : '✅ Location data quality is good! Continue monitoring.'}
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('lastUpdated').innerHTML = `Last updated: ${new Date().toLocaleString()}`;
+
+    } catch (error) {
+        console.error('Quality metrics error:', error);
+        document.getElementById('qualityData').innerHTML = '<p style="color: #dc2626;">Error loading quality metrics. Please check console for details.</p>';
+    }
+}
 
         // Initialize
         checkAuth().then(loadQualityMetrics);
