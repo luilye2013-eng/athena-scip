@@ -1,29 +1,76 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Data Quality Dashboard</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Quality Dashboard - Athena SCIP</title>
+    
+    <!-- External CSS -->
     <link rel="stylesheet" href="styles.css">
-    <script src="config.js"></script>
-    <script src="utils.js"></script>
-    <script src="supabase-client.js"></script>
 </head>
 <body>
     <div class="header">
-        <h1>📊 Data Quality Dashboard</h1>
+        <div>
+            <h1>📊 Data Quality Dashboard</h1>
+            <p>Monitor data quality metrics and event classification</p>
+            <div id="userInfo" style="font-size: 11px; margin-top: 4px;">Loading...</div>
+        </div>
+        <button class="logout-btn" id="logoutBtn">🚪 Logout</button>
         <div class="nav">
             <a href="index.html" class="nav-btn">🏠 Home</a>
+            <a href="recommendations.html" class="nav-btn">💡 Recommendations</a>
+            <a href="events.html" class="nav-btn">📰 Events</a>
+            <a href="analytics.html" class="nav-btn">📊 Analytics</a>
             <a href="quality.html" class="nav-btn active">📊 Quality</a>
         </div>
     </div>
+
     <div class="container">
-        <div id="qualityMetrics" class="card">
+        <div id="lastUpdated" class="last-updated">Loading data...</div>
+
+        <!-- Quality Metrics -->
+        <div class="card" id="qualityMetrics">
             <h3>📊 Data Quality Metrics</h3>
-            <div id="qualityData">Loading...</div>
+            <div id="qualityData" style="margin-top: 15px;">Loading...</div>
+        </div>
+
+        <!-- Disclaimer -->
+        <div class="disclaimer" style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; border-radius: 8px; margin-top: 20px; text-align: left;">
+            <strong>⚠️ Data Quality & Disclaimer Notice</strong>
+            <ul style="font-size: 11px; color: #92400e; margin-top: 8px; padding-left: 20px; line-height: 1.6; text-align: left;">
+                <li><strong>Data Sources:</strong> This platform aggregates data from third-party RSS feeds (BBC, CNN, NPR, Al Jazeera), USGS (earthquakes), NOAA (weather alerts), and Open-Meteo (global weather). Commodity prices are sourced from Yahoo Finance.</li>
+                <li><strong>Data Quality:</strong> Location data may be incomplete or inferred from event descriptions. Events classified as "Unknown" or "Other" type have been flagged for review. Supply chain impact scores are algorithmic estimates and should be verified.</li>
+                <li><strong>Limitations:</strong> The system automatically filters events that are not supply chain related. However, some relevant events may be missed, and some non-relevant events may be included.</li>
+                <li><strong>Purpose:</strong> This platform provides informational analysis and is NOT a substitute for professional supply chain risk assessment or decision-making.</li>
+                <li><strong>Liability:</strong> Athena SCIP and its developers assume no liability for decisions made based on this data. Users should independently verify all critical information.</li>
+                <li><strong>Accuracy:</strong> While we strive for accuracy, we do not guarantee the completeness, timeliness, or accuracy of any data presented.</li>
+            </ul>
         </div>
     </div>
+
+    <!-- External JavaScript - ORDER MATTERS! -->
+    <script src="config.js?v=3"></script>
+    <script src="utils.js?v=3"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    <script src="supabase-client.js?v=3"></script>
     <script>
+        // Quality page logic
         const supabaseClient = window.supabaseClient;
-        
+
+        async function checkAuth() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (!session) window.location.href = 'secure-login.html';
+            else {
+                const userInfo = document.getElementById('userInfo');
+                if (userInfo) userInfo.innerHTML = `👤 ${session.user.email}`;
+            }
+        }
+
+        document.getElementById('logoutBtn').addEventListener('click', async function() {
+            await supabaseClient.auth.signOut();
+            window.location.href = 'secure-login.html';
+        });
+
         async function loadQualityMetrics() {
             try {
                 // Get total events
@@ -36,49 +83,86 @@
                     .eq('location_country', 'Unknown');
                 const unknown = unknownRes.count || 0;
                 
-                // Get non-supply-chain events
-                const nonSCRes = await supabaseClient.from('events')
-                    .select('id', { count: 'exact' })
-                    .eq('is_supply_chain_related', false);
-                const nonSC = nonSCRes.count || 0;
-                
                 // Get events by type
                 const typeRes = await supabaseClient.from('events')
                     .select('event_type, id')
                     .not('event_type', 'is', null);
                 
                 const typeCounts = {};
-                typeRes.data.forEach(e => {
-                    typeCounts[e.event_type] = (typeCounts[e.event_type] || 0) + 1;
-                });
+                if (typeRes.data) {
+                    typeRes.data.forEach(e => {
+                        const type = e.event_type || 'other';
+                        typeCounts[type] = (typeCounts[type] || 0) + 1;
+                    });
+                }
                 
+                // Get events with supply_chain_impact_score
+                const impactRes = await supabaseClient.from('events')
+                    .select('supply_chain_impact_score, id')
+                    .not('supply_chain_impact_score', 'is', null);
+                
+                let avgImpact = 0;
+                if (impactRes.data && impactRes.data.length > 0) {
+                    const sum = impactRes.data.reduce((acc, e) => acc + (e.supply_chain_impact_score || 0), 0);
+                    avgImpact = Math.round(sum / impactRes.data.length);
+                }
+
                 document.getElementById('qualityData').innerHTML = `
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px;">
-                        <div class="stat-card"><div class="stat-number">${total}</div><div class="stat-label">Total Events</div></div>
-                        <div class="stat-card"><div class="stat-number">${unknown}</div><div class="stat-label">Unknown Location (${((unknown/total)*100).toFixed(1)}%)</div></div>
-                        <div class="stat-card"><div class="stat-number">${nonSC}</div><div class="stat-label">Non-Supply Chain (${((nonSC/total)*100).toFixed(1)}%)</div></div>
-                        <div class="stat-card"><div class="stat-number">${total - unknown - nonSC}</div><div class="stat-label">Quality Events (${((total - unknown - nonSC)/total*100).toFixed(1)}%)</div></div>
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px;">
+                        <div class="stat-card">
+                            <div class="stat-number">${total}</div>
+                            <div class="stat-label">Total Events</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" style="color: #f97316;">${unknown}</div>
+                            <div class="stat-label">Unknown Location (${total > 0 ? ((unknown/total)*100).toFixed(1) : 0}%)</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" style="color: #3b82f6;">${total - unknown}</div>
+                            <div class="stat-label">Known Locations</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" style="color: #22c55e;">${avgImpact}</div>
+                            <div class="stat-label">Avg Supply Chain Impact</div>
+                        </div>
                     </div>
-                    <div style="margin-top: 15px;">
-                        <h4>Event Type Distribution</h4>
-                        <ul style="columns: 2; font-size: 13px;">
-                            ${Object.entries(typeCounts).map(([type, count]) => 
-                                `<li><strong>${type}:</strong> ${count}</li>`
-                            ).join('')}
-                        </ul>
-                    </div>
-                    <div style="margin-top: 15px; background: #fef3c7; padding: 10px; border-radius: 6px; font-size: 12px;">
-                        <strong>💡 Data Quality Tip:</strong> 
-                        Improve data quality by reviewing events with unknown locations or non-supply-chain classifications.
-                        Consider adding more location keywords to the enrichment module.
+                    <div style="margin-top: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div>
+                            <h4>📊 Event Type Distribution</h4>
+                            <ul style="list-style: none; padding: 0; font-size: 13px;">
+                                ${Object.entries(typeCounts).map(([type, count]) => 
+                                    `<li style="padding: 4px 0; border-bottom: 1px solid #e5e7eb;">
+                                        <strong>${type.replace('_', ' ')}:</strong> 
+                                        <span style="float: right;">${count} (${total > 0 ? ((count/total)*100).toFixed(1) : 0}%)</span>
+                                    </li>`
+                                ).join('')}
+                            </ul>
+                        </div>
+                        <div>
+                            <h4>💡 Quality Recommendations</h4>
+                            <ul style="font-size: 12px; color: #4b5563; padding-left: 20px; line-height: 1.8;">
+                                <li>${unknown > 0 ? `⚠️ ${unknown} events need location enrichment` : '✅ All events have location data'}</li>
+                                <li>${Object.keys(typeCounts).length > 5 ? `📊 ${Object.keys(typeCounts).length} event types detected` : '✅ Good event type diversity'}</li>
+                                <li>${avgImpact > 0 ? `📈 Average supply chain impact score: ${avgImpact}` : '⚠️ No impact scores calculated'}</li>
+                            </ul>
+                            <div style="margin-top: 10px; background: #eff6ff; padding: 10px; border-radius: 6px; font-size: 12px;">
+                                <strong>💡 Tip:</strong> 
+                                ${unknown > 20 ? 'Review events with unknown locations. Consider adding more location keywords to the enrichment module.' : 'Location data quality is good!'}
+                            </div>
+                        </div>
                     </div>
                 `;
-            } catch (e) {
-                document.getElementById('qualityData').innerHTML = '<p>Error loading quality metrics</p>';
+                
+                document.getElementById('lastUpdated').innerHTML = `Last updated: ${new Date().toLocaleString()}`;
+
+            } catch (error) {
+                console.error('Quality metrics error:', error);
+                document.getElementById('qualityData').innerHTML = '<p style="color: #dc2626;">Error loading quality metrics. Please check console for details.</p>';
             }
         }
-        
-        loadQualityMetrics();
+
+        // Initialize
+        checkAuth().then(loadQualityMetrics);
     </script>
 </body>
 </html>
