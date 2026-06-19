@@ -358,51 +358,98 @@ def fetch_shipping_disruptions():
 # ============================================
 
 def run_ingestion():
+    logger.info("=" * 60)
+    logger.info("📊 Athena SCIP - Unified Event Ingestor")
+    logger.info("=" * 60)
+
+    total_stored = 0
+
+    # Clear old weather and shipping data
+    try:
+        supabase.table("weather_alerts").delete().neq("id", "00000000-0000-0000-0000-000000000000").execute()
+        supabase.table("shipping_disruptions").delete().neq("id", "00000000-0000-0000-0000-000000000000").execute()
+        logger.info("🧹 Cleared old weather and shipping data")
+    except Exception as e:
+        logger.warning(f"⚠️ Clear old data warning: {e}")
+
     # 1. News Events
     logger.info("\n📰 Fetching News Events...")
-news_events = fetch_news_events()
-for event in news_events:
-    # Enrich location
-    location = enrich_location(event["title"], event.get("description", ""))
-    
-    # Classify event type
-    event_type = classify_event_type(event["title"], event.get("description", ""))
-    
-    # Check if supply chain related
-    if not is_supply_chain_related(event["title"], event.get("description", "")):
-        # Skip non-supply-chain events to improve data quality
-        logger.debug(f"⏭️ Skipping non-supply-chain event: {event['title'][:50]}...")
-        continue
-    
-    # Calculate severity (boosted for supply chain impact)
-    base_severity = calculate_severity(event_type, event["title"])
-    
-    # Calculate supply chain impact
-    impact = calculate_supply_chain_impact(event["title"], event.get("description", ""), base_severity)
-    severity = min(5, max(1, int(impact['impact_score'] / 20) + 1))
-    
-    event_data = {
-        "external_id": hashlib.md5(event["title"].encode()).hexdigest()[:16],
-        "source": event.get("source", "news"),
-        "title": event["title"],
-        "description": event.get("description", ""),
-        "event_type": event_type,
-        "severity": severity,
-        "location_country": location,
-        "start_date": event.get("published_at"),
-        "confidence_score": 0.7,
-        "affected_areas": impact['affected_areas'],
-        "supply_chain_impact_score": impact['impact_score'],
-        "raw_data": json.dumps(event)
-    }
-    if store_item("events", event_data, "external_id"):
-        total_stored += 1
+    news_events = fetch_news_events()
+    for event in news_events:
+        # Enrich location
+        location = enrich_location(event["title"], event.get("description", ""))
+        
+        # Classify event type
+        event_type = classify_event_type(event["title"], event.get("description", ""))
+        
+        # Check if supply chain related
+        if not is_supply_chain_related(event["title"], event.get("description", "")):
+            logger.debug(f"⏭️ Skipping non-supply-chain event: {event['title'][:50]}...")
+            continue
+        
+        base_severity = calculate_severity(event_type, event["title"])
+        impact = calculate_supply_chain_impact(event["title"], event.get("description", ""), base_severity)
+        severity = min(5, max(1, int(impact['impact_score'] / 20) + 1))
+        
+        event_data = {
+            "external_id": hashlib.md5(event["title"].encode()).hexdigest()[:16],
+            "source": event.get("source", "news"),
+            "title": event["title"],
+            "description": event.get("description", ""),
+            "event_type": event_type,
+            "severity": severity,
+            "location_country": location,
+            "start_date": event.get("published_at"),
+            "confidence_score": 0.7,
+            "affected_areas": impact['affected_areas'],
+            "supply_chain_impact_score": impact['impact_score'],
+            "raw_data": json.dumps(event)
+        }
+        if store_item("events", event_data, "external_id"):
+            total_stored += 1
+
+    # 2. Earthquakes
+    logger.info("\n🌍 Fetching Earthquakes...")
+    earthquakes = fetch_earthquakes()
+    for eq in earthquakes:
+        props = eq.get("properties", {})
+        place = props.get('place', 'Unknown')
+        magnitude = props.get("mag", 0)
+
+        event_data = {
+            "external_id": props.get("code", hashlib.md5(place.encode()).hexdigest()[:16]),
+            "source": "USGS",
+            "title": f"Earthquake: {place}",
+            "description": f"Magnitude {magnitude} earthquake detected",
+            "event_type": "natural_disaster",
+            "severity": 4 if magnitude >= 6 else 3,
+            "location_country": extract_country(place),
+            "start_date": datetime.fromtimestamp(props.get("time", 0)/1000).isoformat() if props.get("time") else None,
+            "confidence_score": 0.9,
+            "raw_data": json.dumps(props)
+        }
+        if store_item("events", event_data, "external_id"):
+            total_stored += 1
+
+    # 3. Weather Alerts
+    logger.info("\n🌤️ Fetching Weather Alerts...")
+    weather_alerts = fetch_weather_alerts()
+    for alert in weather_alerts:
+        if store_item("weather_alerts", alert, "alert_type"):
+            total_stored += 1
+
+    # 4. Shipping Disruptions
+    logger.info("\n🚢 Fetching Shipping Disruptions...")
+    shipping_disruptions = fetch_shipping_disruptions()
+    for disruption in shipping_disruptions:
+        if store_item("shipping_disruptions", disruption, "route_name"):
+            total_stored += 1
 
     logger.info(f"\n{'='*60}")
     logger.info(f"✅ Ingestion Complete! Stored {total_stored} new items")
     logger.info(f"{'='*60}")
     
-    return total_stored
+    return total_stored  # ✅ Now inside the function
 
 # ============================================
 # MAIN LOOP
