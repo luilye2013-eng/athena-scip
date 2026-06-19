@@ -155,10 +155,6 @@ def calculate_impact_score(event_type, severity, title, description):
     
     # Cap at 100
     return min(100, base_score + bonus)
-
-# Use in event processing
-impact_score = calculate_impact_score(event_type, severity, event["title"], event.get("description", ""))
-
 # ============================================
 # FETCH FUNCTIONS
 # ============================================
