@@ -1,6 +1,6 @@
 """
 Athena SCIP - Unified Event Ingestor
-Fetches: News Events, Earthquakes, Weather Alerts, Shipping Disruptions
+Fetches: News Events, Earthquakes, Weather Alerts, Shipping Disruptions, Commodity Prices
 SECURE VERSION: Uses environment variables for all secrets
 Runs continuously with configurable interval
 """
@@ -16,13 +16,7 @@ import logging
 import time
 import hashlib
 import sys
-from data_quality import (
-    is_supply_chain_related,
-    enrich_location,
-    classify_event_type,
-    calculate_supply_chain_impact,
-    SUPPLY_CHAIN_EVENT_TYPES
-)
+import yfinance as yf
 
 # ============================================
 # CONFIGURATION
@@ -58,6 +52,22 @@ EVENT_KEYWORDS = {
     "sanctions": ["sanctions", "embargo", "trade ban", "restrictions", "tariff"],
     "strike": ["strike", "walkout", "labor dispute", "union", "protest", "blockade", "port strike"],
     "pandemic": ["outbreak", "epidemic", "pandemic", "virus", "disease", "ebola", "covid"]
+}
+
+# ============================================
+# COMMODITY TICKERS
+# ============================================
+COMMODITY_TICKERS = {
+    'Steel': 'X',
+    'Gold': 'GC=F',
+    'Crude Oil': 'CL=F',
+    'Natural Gas': 'NG=F',
+    'Copper': 'HG=F',
+    'Wheat': 'ZW=F',
+    'Corn': 'ZC=F',
+    'Soybeans': 'ZS=F',
+    'Semiconductors': 'SOXX',
+    'Lithium': 'LIT'
 }
 
 # ============================================
@@ -131,30 +141,73 @@ def store_item(table, data, id_field="title"):
         logger.error(f"❌ Error storing to {table}: {e}")
         return False
 
-# Calculate supply chain impact score
-def calculate_impact_score(event_type, severity, title, description):
-    """Calculate supply chain impact score (0-100)"""
-    text = (title + " " + (description or "")).lower()
-    
-    # Base score from severity
-    base_score = severity * 10
-    
-    # Bonus for supply chain keywords
-    bonus = 0
-    supply_chain_bonus = {
-        'port': 15, 'canal': 20, 'strait': 20, 'shipping': 15,
-        'oil': 15, 'gas': 15, 'semiconductor': 20, 'chip': 15,
-        'factory': 10, 'plant': 10, 'warehouse': 10,
-        'strike': 15, 'sanctions': 20, 'embargo': 20,
-        'shortage': 15, 'disruption': 10, 'delay': 10
-    }
-    
-    for keyword, value in supply_chain_bonus.items():
-        if keyword in text:
-            bonus += value
-    
-    # Cap at 100
-    return min(100, base_score + bonus)
+# ============================================
+# COMMODITY PRICE FUNCTIONS
+# ============================================
+
+def fetch_commodity_prices():
+    """Fetch current commodity prices from Yahoo Finance"""
+    prices = []
+    for name, ticker in COMMODITY_TICKERS.items():
+        try:
+            stock = yf.Ticker(ticker)
+            hist = stock.history(period="1d")
+            if not hist.empty:
+                price = hist['Close'].iloc[-1]
+                prices.append({
+                    "commodity_name": name,
+                    "price_usd": round(price, 2)
+                })
+                logger.debug(f"💰 Fetched {name}: ${price:.2f}")
+            else:
+                logger.warning(f"⚠️ No data for {name} ({ticker})")
+        except Exception as e:
+            logger.error(f"❌ Error fetching {name}: {e}")
+    return prices
+
+def save_price_history():
+    """Save current commodity prices to history table"""
+    try:
+        prices = fetch_commodity_prices()
+        if not prices:
+            logger.warning("⚠️ No commodity prices fetched")
+            return 0
+        
+        today = datetime.now().date().isoformat()
+        saved_count = 0
+        
+        for commodity in prices:
+            try:
+                # Check if already saved today
+                existing = supabase.table("price_history") \
+                    .select("id") \
+                    .eq("commodity_name", commodity["commodity_name"]) \
+                    .eq("recorded_date", today) \
+                    .execute()
+                
+                if existing.data:
+                    continue  # Already saved today
+                
+                # Insert new price
+                supabase.table("price_history").insert({
+                    "commodity_name": commodity["commodity_name"],
+                    "price_usd": commodity["price_usd"],
+                    "recorded_date": today
+                }).execute()
+                saved_count += 1
+                logger.info(f"📊 Saved price history: {commodity['commodity_name']} = ${commodity['price_usd']}")
+                
+            except Exception as e:
+                logger.error(f"❌ Error saving {commodity['commodity_name']}: {e}")
+        
+        if saved_count > 0:
+            logger.info(f"✅ Saved {saved_count} new price records for {today}")
+        return saved_count
+        
+    except Exception as e:
+        logger.error(f"❌ Error in save_price_history: {e}")
+        return 0
+
 # ============================================
 # FETCH FUNCTIONS
 # ============================================
@@ -372,21 +425,10 @@ def run_ingestion():
     logger.info("\n📰 Fetching News Events...")
     news_events = fetch_news_events()
     for event in news_events:
-        # Enrich location
-        location = enrich_location(event["title"], event.get("description", ""))
-        
-        # Classify event type
-        event_type = classify_event_type(event["title"], event.get("description", ""))
-        
-        # Check if supply chain related
-        if not is_supply_chain_related(event["title"], event.get("description", "")):
-            logger.debug(f"⏭️ Skipping non-supply-chain event: {event['title'][:50]}...")
-            continue
-        
-        base_severity = calculate_severity(event_type, event["title"])
-        impact = calculate_supply_chain_impact(event["title"], event.get("description", ""), base_severity)
-        severity = min(5, max(1, int(impact['impact_score'] / 20) + 1))
-        
+        event_type = classify_event(event["title"], event.get("description", ""))
+        severity = calculate_severity(event_type, event["title"])
+        location = extract_country(event["title"] + " " + (event.get("description") or ""))
+
         event_data = {
             "external_id": hashlib.md5(event["title"].encode()).hexdigest()[:16],
             "source": event.get("source", "news"),
@@ -397,8 +439,6 @@ def run_ingestion():
             "location_country": location,
             "start_date": event.get("published_at"),
             "confidence_score": 0.7,
-            "affected_areas": impact['affected_areas'],
-            "supply_chain_impact_score": impact['impact_score'],
             "raw_data": json.dumps(event)
         }
         if store_item("events", event_data, "external_id"):
@@ -441,11 +481,16 @@ def run_ingestion():
         if store_item("shipping_disruptions", disruption, "route_name"):
             total_stored += 1
 
+    # 5. Save Price History (Daily)
+    logger.info("\n💰 Saving Commodity Price History...")
+    price_count = save_price_history()
+    total_stored += price_count
+
     logger.info(f"\n{'='*60}")
     logger.info(f"✅ Ingestion Complete! Stored {total_stored} new items")
     logger.info(f"{'='*60}")
     
-    return total_stored  # ✅ Now inside the function
+    return total_stored
 
 # ============================================
 # MAIN LOOP
@@ -473,6 +518,10 @@ def run_continuous():
 # ============================================
 
 if __name__ == "__main__":
+    logger.info("=" * 50)
+    logger.info("📊 Athena SCIP - Event Ingestor")
+    logger.info("=" * 50)
+    
     # Check if running in continuous mode or one-off
     if os.getenv("RUN_ONCE", "false").lower() == "true":
         run_ingestion()
