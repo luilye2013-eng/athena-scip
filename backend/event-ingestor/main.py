@@ -18,6 +18,13 @@ import hashlib
 import sys
 import yfinance as yf
 
+# Import commodity configuration
+from commodities import (
+    COMMODITY_NAMES,
+    COMMODITY_TICKERS,
+    FALLBACK_PRICES
+)
+
 # ============================================
 # CONFIGURATION
 # ============================================
@@ -52,22 +59,6 @@ EVENT_KEYWORDS = {
     "sanctions": ["sanctions", "embargo", "trade ban", "restrictions", "tariff"],
     "strike": ["strike", "walkout", "labor dispute", "union", "protest", "blockade", "port strike"],
     "pandemic": ["outbreak", "epidemic", "pandemic", "virus", "disease", "ebola", "covid"]
-}
-
-# ============================================
-# COMMODITY TICKERS
-# ============================================
-COMMODITY_TICKERS = {
-    'Steel': 'X',
-    'Gold': 'GC=F',
-    'Crude Oil': 'CL=F',
-    'Natural Gas': 'NG=F',
-    'Copper': 'HG=F',
-    'Wheat': 'ZW=F',
-    'Corn': 'ZC=F',
-    'Soybeans': 'ZS=F',
-    'Semiconductors': 'SOXX',
-    'Lithium': 'LIT'
 }
 
 # ============================================
@@ -133,7 +124,7 @@ def store_item(table, data, id_field="title"):
         existing = supabase.table(table).select("id").eq(id_field, data.get(id_field, data.get("title", ""))).execute()
         if existing.data:
             return False
-        
+
         supabase.table(table).insert(data).execute()
         logger.info(f"📥 Stored {table[:-1]}: {data.get('title', data.get('alert_type', 'unknown'))[:50]}...")
         return True
@@ -146,36 +137,61 @@ def store_item(table, data, id_field="title"):
 # ============================================
 
 def fetch_commodity_prices():
-    """Fetch current commodity prices from Yahoo Finance"""
+    """
+    Fetch commodity prices using stable commodity names.
+    Tries multiple tickers per commodity for resilience.
+    """
     prices = []
-    for name, ticker in COMMODITY_TICKERS.items():
-        try:
-            stock = yf.Ticker(ticker)
-            hist = stock.history(period="1d")
-            if not hist.empty:
-                price = hist['Close'].iloc[-1]
+
+    for name in COMMODITY_NAMES:
+        tickers = COMMODITY_TICKERS.get(name, [])
+        price_found = False
+
+        # Try each ticker for this commodity
+        for ticker in tickers:
+            try:
+                stock = yf.Ticker(ticker)
+                hist = stock.history(period="1d")
+                if not hist.empty:
+                    price = hist['Close'].iloc[-1]
+                    prices.append({
+                        "commodity_name": name,
+                        "price_usd": round(price, 2)
+                    })
+                    logger.debug(f"💰 Fetched {name}: ${price:.2f} from {ticker}")
+                    price_found = True
+                    break  # Success, move to next commodity
+                else:
+                    logger.debug(f"⚠️ No data for {name} from {ticker}")
+            except Exception as e:
+                logger.debug(f"⚠️ Could not fetch {name} from {ticker}: {e}")
+
+        # If no ticker worked, use fallback price
+        if not price_found:
+            fallback = FALLBACK_PRICES.get(name)
+            if fallback:
                 prices.append({
                     "commodity_name": name,
-                    "price_usd": round(price, 2)
+                    "price_usd": fallback
                 })
-                logger.debug(f"💰 Fetched {name}: ${price:.2f}")
+                logger.warning(f"⚠️ Using fallback price for {name}: ${fallback}")
             else:
-                logger.warning(f"⚠️ No data for {name} ({ticker})")
-        except Exception as e:
-            logger.error(f"❌ Error fetching {name}: {e}")
+                logger.warning(f"⚠️ No price available for {name}")
+
+    logger.info(f"💰 Fetched/updated prices for {len(prices)} commodities")
     return prices
 
 def save_price_history():
-    """Save current commodity prices to history table"""
+    """Save current commodity prices to history table using commodity names"""
     try:
         prices = fetch_commodity_prices()
         if not prices:
             logger.warning("⚠️ No commodity prices fetched")
             return 0
-        
+
         today = datetime.now().date().isoformat()
         saved_count = 0
-        
+
         for commodity in prices:
             try:
                 # Check if already saved today
@@ -184,10 +200,10 @@ def save_price_history():
                     .eq("commodity_name", commodity["commodity_name"]) \
                     .eq("recorded_date", today) \
                     .execute()
-                
+
                 if existing.data:
                     continue  # Already saved today
-                
+
                 # Insert new price
                 supabase.table("price_history").insert({
                     "commodity_name": commodity["commodity_name"],
@@ -196,14 +212,14 @@ def save_price_history():
                 }).execute()
                 saved_count += 1
                 logger.info(f"📊 Saved price history: {commodity['commodity_name']} = ${commodity['price_usd']}")
-                
+
             except Exception as e:
                 logger.error(f"❌ Error saving {commodity['commodity_name']}: {e}")
-        
+
         if saved_count > 0:
             logger.info(f"✅ Saved {saved_count} new price records for {today}")
         return saved_count
-        
+
     except Exception as e:
         logger.error(f"❌ Error in save_price_history: {e}")
         return 0
@@ -489,7 +505,7 @@ def run_ingestion():
     logger.info(f"\n{'='*60}")
     logger.info(f"✅ Ingestion Complete! Stored {total_stored} new items")
     logger.info(f"{'='*60}")
-    
+
     return total_stored
 
 # ============================================
@@ -499,7 +515,7 @@ def run_ingestion():
 def run_continuous():
     """Run the ingestor continuously with the configured interval"""
     logger.info(f"🚀 Starting continuous ingestion (interval: {INGEST_INTERVAL}s)")
-    
+
     while True:
         try:
             run_ingestion()
@@ -521,7 +537,7 @@ if __name__ == "__main__":
     logger.info("=" * 50)
     logger.info("📊 Athena SCIP - Event Ingestor")
     logger.info("=" * 50)
-    
+
     # Check if running in continuous mode or one-off
     if os.getenv("RUN_ONCE", "false").lower() == "true":
         run_ingestion()

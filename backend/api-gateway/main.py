@@ -17,6 +17,7 @@ from supabase import create_client, Client
 import yfinance as yf
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 import httpx
+from commodities import FALLBACK_PRICES
 
 # ============================================
 # Logging Setup
@@ -306,42 +307,42 @@ async def get_live_prices():
 
 @app.get("/prices/live-comprehensive")
 async def get_live_prices_comprehensive():
-    tickers = {
-        'Crude Oil': 'CL=F', 'Natural Gas': 'NG=F', 'Gold': 'GC=F',
-        'Copper': 'HG=F', 'Corn': 'ZC=F', 'Wheat': 'ZW=F', 'Soybeans': 'ZS=F'
-    }
-    unit_map = {
-        'Crude Oil': 'per barrel', 'Natural Gas': 'per MMBtu', 'Gold': 'per ounce',
-        'Copper': 'per pound', 'Corn': 'per bushel', 'Wheat': 'per bushel', 'Soybeans': 'per bushel'
-    }
-    prices = []
-    for name, ticker in tickers.items():
-        try:
-            stock = yf.Ticker(ticker)
-            hist = stock.history(period="5d")
-            if len(hist) >= 2:
-                current = hist['Close'].iloc[-1]
-                previous = hist['Close'].iloc[-2]
-                change = ((current - previous) / previous) * 100
-                prices.append({
-                    "commodity_name": name,
-                    "price_usd": round(current, 2),
-                    "unit": unit_map[name],
-                    "change_24h": round(change, 1),
-                    "source": "Yahoo Finance"
-                })
-        except Exception as e:
-            logger.error(f"Error fetching {name}: {e}")
-    
-    static_prices = [
-        {"commodity_name": "Steel", "price_usd": 847.50, "unit": "per ton", "change_24h": -0.8, "source": "Static"},
-        {"commodity_name": "Semiconductors", "price_usd": 1248.00, "unit": "per wafer", "change_24h": -0.2, "source": "Static"},
-        {"commodity_name": "Lithium", "price_usd": 14750.00, "unit": "per ton", "change_24h": 1.5, "source": "Static"},
-        {"commodity_name": "Nickel", "price_usd": 18450.00, "unit": "per ton", "change_24h": -0.5, "source": "Static"},
-        {"commodity_name": "Iron Ore", "price_usd": 117.20, "unit": "per ton", "change_24h": -0.5, "source": "Static"}
-    ]
-    prices.extend(static_prices)
-    return format_response({"prices": prices, "count": len(prices)})
+    """Get live commodity prices with fallback to static data"""
+    # Try to get prices from Supabase first
+    try:
+        result = supabase.table("live_commodity_prices") \
+            .select("*") \
+            .order("recorded_at", desc=True) \
+            .limit(50) \
+            .execute()
+
+        if result.data:
+            # Group by commodity name to get latest
+            latest = {}
+            for price in result.data:
+                name = price.get("commodity_name")
+                if name and name not in latest:
+                    latest[name] = price
+
+            prices = list(latest.values())
+            if len(prices) >= 5:
+                return format_response({"prices": prices, "count": len(prices)})
+    except Exception as e:
+        logger.error(f"Supabase price fetch error: {e}")
+
+    # Fallback to static data using commodity names
+    static_prices = []
+    for name, price in FALLBACK_PRICES.items():
+        static_prices.append({
+            "commodity_name": name,
+            "price_usd": price,
+            "unit": "per unit",
+            "change_24h": 0.0,
+            "source": "Static Data"
+        })
+
+    # Return all commodities
+    return format_response({"prices": static_prices, "count": len(static_prices)})
 
 # ============================================
 # Country Risk
@@ -390,7 +391,21 @@ async def get_country_risk():
 @app.get("/trends/prices")
 async def get_price_trends(days: int = 14):
     try:
-        result = supabase.table("price_history").select("*").limit(100).execute()
+        result = supabase.table("price_history") \
+            .select("*") \
+            .order("recorded_date", desc=True) \
+            .limit(days * 10) \
+            .execute()
+
+        if not result.data:
+            # Return empty data with message
+            return format_response({
+                "trends": {},
+                "days": days,
+                "message": "No price history available yet. Data is being collected."
+            })
+
+        # Process real data
         trends = {}
         for item in result.data:
             commodity = item.get("commodity_name")
@@ -401,12 +416,17 @@ async def get_price_trends(days: int = 14):
                     "date": item.get("recorded_date"),
                     "price": float(item.get("price_usd", 0))
                 })
+
+        # Sort and limit data
         for commodity in trends:
             trends[commodity].sort(key=lambda x: x["date"])
+            trends[commodity] = trends[commodity][-days:]
+
         return format_response({"trends": trends, "days": days})
+
     except Exception as e:
         logger.error(f"Price trends error: {e}")
-        return format_response({"trends": {}})
+        return format_response(error=str(e))
 
 @app.get("/trends/risk")
 async def get_risk_trends(days: int = 14):
