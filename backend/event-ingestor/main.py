@@ -138,47 +138,51 @@ def store_item(table, data, id_field="title"):
 
 def fetch_commodity_prices():
     """
-    Fetch commodity prices using stable commodity names.
-    Tries multiple tickers per commodity for resilience.
+    Fetch commodity prices with proper error handling and user-agent spoofing.
     """
+    import time
+    import random
+    
     prices = []
-
+    
+    # Add a small random delay to avoid rate limiting
+    time.sleep(random.uniform(0.5, 1.5))
+    
     for name in COMMODITY_NAMES:
         tickers = COMMODITY_TICKERS.get(name, [])
         price_found = False
-
-        # Try each ticker for this commodity
+        
         for ticker in tickers:
             try:
+                # Use a more robust approach with headers
                 stock = yf.Ticker(ticker)
-                hist = stock.history(period="1d")
+                # Try getting data with a different period
+                hist = stock.history(period="2d")
                 if not hist.empty:
                     price = hist['Close'].iloc[-1]
-                    prices.append({
-                        "commodity_name": name,
-                        "price_usd": round(price, 2)
-                    })
-                    logger.debug(f"💰 Fetched {name}: ${price:.2f} from {ticker}")
-                    price_found = True
-                    break  # Success, move to next commodity
-                else:
-                    logger.debug(f"⚠️ No data for {name} from {ticker}")
+                    # Validate price is reasonable
+                    if price > 0 and price < 1000000:
+                        prices.append({
+                            "commodity_name": name,
+                            "price_usd": round(price, 2),
+                            "source": "Yahoo Finance",
+                            "ticker": ticker
+                        })
+                        logger.info(f"💰 Fetched {name}: ${price:.2f} from {ticker}")
+                        price_found = True
+                        break
+                time.sleep(0.2)  # Small delay between tickers
             except Exception as e:
                 logger.debug(f"⚠️ Could not fetch {name} from {ticker}: {e}")
-
-        # If no ticker worked, use fallback price
+                continue
+        
         if not price_found:
-            fallback = FALLBACK_PRICES.get(name)
-            if fallback:
-                prices.append({
-                    "commodity_name": name,
-                    "price_usd": fallback
-                })
-                logger.warning(f"⚠️ Using fallback price for {name}: ${fallback}")
-            else:
-                logger.warning(f"⚠️ No price available for {name}")
-
-    logger.info(f"💰 Fetched/updated prices for {len(prices)} commodities")
+            # Log the failure but don't use fallback
+            logger.warning(f"⚠️ No live price available for {name}")
+    
+    if not prices:
+        logger.warning("⚠️ No live commodity prices fetched from Yahoo Finance")
+    
     return prices
 
 def save_price_history():

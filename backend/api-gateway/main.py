@@ -307,7 +307,10 @@ async def get_live_prices():
 
 @app.get("/prices/live-comprehensive")
 async def get_live_prices_comprehensive():
-    """Get live commodity prices with fallback to static data"""
+    """
+    Get commodity prices with explicit data source labeling.
+    Users can distinguish between live and fallback data.
+    """
     # Try to get prices from Supabase first
     try:
         result = supabase.table("live_commodity_prices") \
@@ -322,27 +325,27 @@ async def get_live_prices_comprehensive():
             for price in result.data:
                 name = price.get("commodity_name")
                 if name and name not in latest:
+                    price["data_source"] = "Live (Supabase)"
                     latest[name] = price
 
             prices = list(latest.values())
             if len(prices) >= 5:
-                return format_response({"prices": prices, "count": len(prices)})
+                return format_response({
+                    "prices": prices,
+                    "count": len(prices),
+                    "data_source": "Live",
+                    "message": "Data fetched from live_commodity_prices table"
+                })
     except Exception as e:
         logger.error(f"Supabase price fetch error: {e}")
 
-    # Fallback to static data using commodity names
-    static_prices = []
-    for name, price in FALLBACK_PRICES.items():
-        static_prices.append({
-            "commodity_name": name,
-            "price_usd": price,
-            "unit": "per unit",
-            "change_24h": 0.0,
-            "source": "Static Data"
-        })
-
-    # Return all commodities
-    return format_response({"prices": static_prices, "count": len(static_prices)})
+    # If no live data, return empty with clear message (not fallback)
+    return format_response({
+        "prices": [],
+        "count": 0,
+        "data_source": "Unavailable",
+        "message": "Live commodity prices are currently unavailable. Please try again later."
+    })
 
 # ============================================
 # Country Risk
