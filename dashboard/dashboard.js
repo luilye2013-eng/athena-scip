@@ -241,17 +241,22 @@ async function loadCountryRisk() {
         gridHtml += '</div>';
         container.innerHTML = gridHtml;
 
+        // Pie chart - safe destroy
         var ctx = document.getElementById('riskPieChart');
         if (ctx) {
+            // Safely destroy existing chart
             if (window.riskPieChart) {
                 try {
-                    window.riskPieChart.destroy();
+                    if (typeof window.riskPieChart.destroy === 'function') {
+                        window.riskPieChart.destroy();
+                    }
                 } catch (e) {
                     console.warn('Chart destroy warning:', e);
                 }
                 window.riskPieChart = null;
             }
 
+            // Create new chart
             try {
                 window.riskPieChart = new Chart(ctx, {
                     type: 'pie',
@@ -766,3 +771,11 @@ document.addEventListener('DOMContentLoaded', function() {
         setInterval(loadAll, 60000);
     });
 });
+
+function refreshPrices() {
+    console.log('🔄 Refreshing prices...');
+    loadPrices();
+    var trendPeriod = document.getElementById('trendPeriod');
+    var days = trendPeriod ? parseInt(trendPeriod.value) : 14;
+    loadTrends(days);
+}
