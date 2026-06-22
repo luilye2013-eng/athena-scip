@@ -3,8 +3,8 @@
  */
 
 // Use window objects - NO DECLARATIONS
-const API_URL = window.CONFIG.API_URL;
-const supabaseClient = window.supabaseClient;
+var API_URL = window.CONFIG.API_URL;
+var supabaseClient = window.supabaseClient;
 
 var priceChart = null, riskChart = null, pieChart = null;
 var allPrices = [];
@@ -117,24 +117,8 @@ async function loadPrices() {
 
     try {
         var data = await safeFetch(API_URL + '/prices/live-comprehensive');
-        var allPrices = data?.prices || [];
-        var dataSource = data?.data_source || 'Unknown';
-        var message = data?.message || '';
-
-        if (allPrices.length === 0) {
-            container.innerHTML = `
-                <div style="text-align: center; padding: 20px; color: #6b7280;">
-                    <p>⚠️ No price data available</p>
-                    <p style="font-size: 11px; margin-top: 8px;">Please check back later.</p>
-                </div>
-            `;
-            return;
-        }
-
-        // Store for display
-        window.allPrices = allPrices;
+        allPrices = data?.prices || [];
         displayPrices();
-
     } catch (e) {
         console.error('Price load error:', e);
         container.innerHTML = '<p>Price data unavailable</p>';
@@ -145,27 +129,21 @@ function displayPrices() {
     var container = document.getElementById('pricesContainer');
     if (!container) return;
 
-    // Check if we have prices
-    if (!window.allPrices || window.allPrices.length === 0) {
-        container.innerHTML = `
-            <div style="text-align: center; padding: 20px; color: #6b7280;">
-                <p>📊 No commodity prices available</p>
-                <p style="font-size: 11px; margin-top: 8px;">Live prices are currently unavailable. Please check back later.</p>
-            </div>
-        `;
-        return;
-    }
-
-    var prices = window.allPrices.slice(0, priceDisplayLimit);
+    var prices = allPrices.slice(0, priceDisplayLimit);
     var showMoreBtn = document.getElementById('showMorePrices');
 
-    if (window.allPrices.length > priceDisplayLimit) {
+    if (allPrices.length > priceDisplayLimit) {
         if (showMoreBtn) {
             showMoreBtn.style.display = 'inline-block';
-            showMoreBtn.textContent = 'Show More (' + (window.allPrices.length - priceDisplayLimit) + ' remaining)';
+            showMoreBtn.textContent = 'Show More (' + (allPrices.length - priceDisplayLimit) + ' remaining)';
         }
     } else {
         if (showMoreBtn) showMoreBtn.style.display = 'none';
+    }
+
+    if (!prices || prices.length === 0) {
+        container.innerHTML = '<p>No price data</p>';
+        return;
     }
 
     var html = '';
@@ -182,34 +160,21 @@ function displayPrices() {
         html += '</div>';
     }
 
-    // Determine data source
-    var dataSource = 'Unknown';
-    var isLive = false;
-    if (window.allPrices.length > 0 && window.allPrices[0].source) {
-        dataSource = window.allPrices[0].source;
-        isLive = dataSource.includes('Live') || dataSource.includes('Yahoo');
-    }
-    
+    var dataSource = allPrices.length > 0 ? (allPrices[0].source || 'Unknown') : 'Unknown';
+    var isLive = dataSource.includes('Live') || dataSource.includes('Yahoo');
     var sourceIcon = isLive ? '✅' : '📊';
     var sourceNote = isLive ? ' (Live data)' : ' (Reference data - may not reflect current market)';
     
-    html += `
-        <div style="font-size: 10px; color: #6b7280; text-align: right; margin-top: 8px; padding-top: 8px; border-top: 1px solid #e5e7eb;">
-            ${sourceIcon} Source: <strong>${dataSource}</strong>${sourceNote}
-        </div>
-    `;
+    html += '<div style="font-size: 10px; color: #6b7280; text-align: right; margin-top: 8px; padding-top: 8px; border-top: 1px solid #e5e7eb;">';
+    html += sourceIcon + ' Source: <strong>' + dataSource + '</strong>' + sourceNote;
+    html += '</div>';
 
     container.innerHTML = html;
 }
+
 function loadMorePrices() {
     priceDisplayLimit += 12;
     displayPrices();
-}
-
-function refreshPrices() {
-    console.log('🔄 Refreshing prices...');
-    loadPrices();
-    loadTrends(parseInt(document.getElementById('trendPeriod').value));
 }
 
 async function loadStats() {
@@ -247,7 +212,6 @@ async function loadStats() {
 }
 
 async function loadCountryRisk() {
-    async function loadCountryRisk() {
     var container = document.getElementById('countryRiskContainer');
     if (!container) return;
 
@@ -263,7 +227,6 @@ async function loadCountryRisk() {
             return;
         }
 
-        // Update the risk grid
         var gridHtml = '<div class="risk-grid">';
         var riskLabels = [];
         var riskScores = [];
@@ -278,10 +241,8 @@ async function loadCountryRisk() {
         gridHtml += '</div>';
         container.innerHTML = gridHtml;
 
-        // Pie chart - with proper destroy check to prevent flickering
         var ctx = document.getElementById('riskPieChart');
         if (ctx) {
-            // Properly destroy existing chart
             if (window.riskPieChart) {
                 try {
                     window.riskPieChart.destroy();
@@ -291,7 +252,6 @@ async function loadCountryRisk() {
                 window.riskPieChart = null;
             }
 
-            // Create new chart
             try {
                 window.riskPieChart = new Chart(ctx, {
                     type: 'pie',
@@ -308,7 +268,7 @@ async function loadCountryRisk() {
                         plugins: {
                             legend: {
                                 position: 'bottom',
-                                labels: { 
+                                labels: {
                                     font: { size: 9 },
                                     boxWidth: 10,
                                     padding: 8
@@ -327,6 +287,7 @@ async function loadCountryRisk() {
         container.innerHTML = '<p>Risk data unavailable</p>';
     }
 }
+
 async function loadTrends(days) {
     if (days === undefined) days = 14;
     try {
@@ -334,72 +295,45 @@ async function loadTrends(days) {
         console.log('📊 Price trend data:', priceData);
 
         var priceTrends = priceData?.trends || {};
+        var message = priceData?.message || '';
 
         var ctx1 = document.getElementById('priceTrendChart');
         if (!ctx1) return;
 
-        // Handle no data
         if (Object.keys(priceTrends).length === 0) {
             if (window.priceChart) window.priceChart.destroy();
             window.priceChart = new Chart(ctx1, {
-    type: 'line',
-    data: {
-        labels: formattedDates,
-        datasets: datasets
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: true,
-        plugins: {
-            legend: {
-                position: 'top',
-                labels: {
-                    font: { size: 9 },
-                    boxWidth: 12,
-                    padding: 8
-                }
-            }
-        },
-        scales: {
-            y: {
-                beginAtZero: true,
-                ticks: {
-                    font: { size: 8 },
-                    maxTicksLimit: 6,
-                    callback: function(value) {
-                        if (value >= 1000) {
-                            return '$' + (value / 1000).toFixed(0) + 'k';
-                        }
-                        return '$' + value.toFixed(0);
-                    }
+                type: 'line',
+                data: {
+                    labels: ['No Data'],
+                    datasets: [{
+                        label: 'Price data unavailable',
+                        data: [0],
+                        borderColor: '#ccc',
+                        backgroundColor: 'rgba(204, 204, 204, 0.2)',
+                        fill: true,
+                        pointRadius: 0
+                    }]
                 },
-                title: {
-                    display: true,
-                    text: 'Price (USD)',
-                    font: { size: 9 }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function() {
+                                    return 'No price data available. Data is being collected.';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: { display: false },
+                        x: { display: false }
+                    }
                 }
-            },
-            x: {
-                ticks: {
-                    font: { size: 7 },
-                    maxRotation: 45,
-                    minRotation: 0,
-                    autoSkip: true,
-                    maxTicksLimit: 10
-                }
-            }
-        },
-        // Prevent chart from expanding
-        layout: {
-            padding: {
-                left: 5,
-                right: 5,
-                top: 5,
-                bottom: 5
-            }
-        }
-    }
-});
+            });
             
             var overlay = ctx1.parentElement.querySelector('.no-data-overlay');
             if (!overlay) {
@@ -418,29 +352,9 @@ async function loadTrends(days) {
         var existingOverlay = ctx1.parentElement.querySelector('.no-data-overlay');
         if (existingOverlay) existingOverlay.remove();
 
-        // Get all commodities and limit to 5 most relevant
-        var allCommodities = Object.keys(priceTrends);
-        
-        // Calculate price range for each commodity and sort by max price
-        var commodityRanges = [];
-        for (var c = 0; c < allCommodities.length; c++) {
-            var commodity = allCommodities[c];
-            var prices = priceTrends[commodity] || [];
-            var maxPrice = 0;
-            for (var p = 0; p < prices.length; p++) {
-                if (prices[p].price > maxPrice) maxPrice = prices[p].price;
-            }
-            commodityRanges.push({ name: commodity, maxPrice: maxPrice });
-        }
-        // Sort by max price descending, then take top 5
-        commodityRanges.sort(function(a, b) { return b.maxPrice - a.maxPrice; });
-        var commodities = [];
-        for (var c = 0; c < Math.min(5, commodityRanges.length); c++) {
-            commodities.push(commodityRanges[c].name);
-        }
-
-        var colors = window.CONFIG.COLORS.chart;
         var allDates = {};
+        var commodities = Object.keys(priceTrends);
+        var colors = window.CONFIG.COLORS.chart;
         var datasets = [];
         var currentYear = new Date().getFullYear();
 
@@ -527,10 +441,18 @@ async function loadTrends(days) {
                             maxTicksLimit: 10
                         }
                     }
+                },
+                layout: {
+                    padding: {
+                        left: 5,
+                        right: 5,
+                        top: 5,
+                        bottom: 5
+                    }
                 }
             }
         });
-        console.log('✅ Price chart updated with top 5 commodities');
+        console.log('✅ Price chart updated');
 
         await loadRiskTrends(days);
 
@@ -550,7 +472,6 @@ async function loadRiskTrends(days) {
         var ctx2 = document.getElementById('riskTrendChart');
         if (!ctx2) return;
 
-        // Handle no data
         if (Object.keys(riskTrends).length === 0) {
             if (window.riskChart) window.riskChart.destroy();
             window.riskChart = new Chart(ctx2, {
@@ -692,12 +613,13 @@ async function loadRiskTrends(days) {
                 }
             }
         });
-        console.log('✅ Risk chart updated with real data (0-100 scale)');
+        console.log('✅ Risk chart updated');
 
     } catch (e) {
         console.error('Risk trend error:', e);
     }
 }
+
 async function exportData(type) {
     var statusDiv = document.getElementById('exportStatus');
     if (!statusDiv) return;
@@ -800,6 +722,14 @@ async function exportAllData() {
         console.error('Export all error:', error);
         statusDiv.textContent = '❌ Export all failed: ' + error.message;
     }
+}
+
+function refreshPrices() {
+    console.log('🔄 Refreshing prices...');
+    loadPrices();
+    var trendPeriod = document.getElementById('trendPeriod');
+    var days = trendPeriod ? parseInt(trendPeriod.value) : 14;
+    loadTrends(days);
 }
 
 async function loadAll() {
