@@ -1,12 +1,11 @@
 ﻿services:
-  # Web API Service
   - type: web
     name: athena-scip-api
     runtime: python
     plan: free
     region: oregon
     buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn backend.api-gateway.main:app --host 0.0.0.0 --port $PORT
+    startCommand: uvicorn backend.api_gateway.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: SUPABASE_URL
         sync: false
@@ -17,44 +16,4 @@
       - key: CORS_ORIGINS
         value: "*"
       - key: PYTHON_VERSION
-        value: 3.9.0
-
-  # Event Ingestor Worker
-  - type: worker
-    name: athena-scip-ingestor
-    runtime: python
-    plan: free
-    region: oregon
-    buildCommand: cd backend/event-ingestor && pip install -r requirements.txt
-    startCommand: cd backend/event-ingestor && python main.py
-    envVars:
-      - key: SUPABASE_URL
-        sync: false
-      - key: SUPABASE_ANON_KEY
-        sync: false
-      - key: SUPABASE_SERVICE_ROLE_KEY
-        sync: false
-      - key: INGEST_INTERVAL
-        value: "300"
-      - key: PYTHON_VERSION
-        value: 3.9.0
-
-  # Recommender Service Worker
-  - type: worker
-    name: athena-scip-recommender
-    runtime: python
-    plan: free
-    region: oregon
-    buildCommand: cd backend/recommender-svc && pip install -r requirements.txt
-    startCommand: cd backend/recommender-svc && python main.py
-    envVars:
-      - key: SUPABASE_URL
-        sync: false
-      - key: SUPABASE_ANON_KEY
-        sync: false
-      - key: SUPABASE_SERVICE_ROLE_KEY
-        sync: false
-      - key: RECOMMEND_INTERVAL
-        value: "600"
-      - key: PYTHON_VERSION
-        value: 3.9.0
+        value: 3.11.9
