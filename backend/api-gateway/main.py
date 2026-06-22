@@ -21,6 +21,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_excep
 import httpx
 from commodities import FALLBACK_PRICES
 from price_fetcher import fetch_commodity_prices, REFERENCE_PRICES
+from price_fetcher import fetch_commodity_prices
 
 # ============================================
 # Logging Setup
@@ -401,6 +402,61 @@ async def get_live_prices_comprehensive():
         "data_source": "IMF Reference Prices",
         "message": "Live prices unavailable - showing reference prices from IMF Primary Commodity Markets"
     })
+
+@app.post("/prices/refresh")
+async def refresh_prices():
+    """Force refresh commodity prices and update database"""
+    try:
+        logger.info("🔄 Refreshing commodity prices...")
+        result = await fetch_commodity_prices()
+        
+        if result["prices"]:
+            # Update live_commodity_prices table
+            for price in result["prices"]:
+                try:
+                    # Check if exists
+                    existing = supabase.table("live_commodity_prices") \
+                        .select("id") \
+                        .eq("commodity_name", price["commodity_name"]) \
+                        .execute()
+                    
+                    if existing.data:
+                        # Update
+                        supabase.table("live_commodity_prices") \
+                            .update({
+                                "price_usd": price["price_usd"],
+                                "source": price.get("source", "Unknown"),
+                                "recorded_at": datetime.utcnow().isoformat()
+                            }) \
+                            .eq("commodity_name", price["commodity_name"]) \
+                            .execute()
+                    else:
+                        # Insert
+                        supabase.table("live_commodity_prices").insert({
+                            "commodity_name": price["commodity_name"],
+                            "price_usd": price["price_usd"],
+                            "unit": price.get("unit", "per unit"),
+                            "source": price.get("source", "Unknown"),
+                            "recorded_at": datetime.utcnow().isoformat()
+                        }).execute()
+                except Exception as e:
+                    logger.error(f"Error updating {price['commodity_name']}: {e}")
+            
+            return format_response({
+                "status": "success",
+                "message": f"Refreshed {len(result['prices'])} commodity prices",
+                "count": len(result["prices"]),
+                "source": result["source"]
+            })
+        else:
+            return format_response({
+                "status": "error",
+                "message": "Failed to fetch prices from any source"
+            }, error="No prices available")
+            
+    except Exception as e:
+        logger.error(f"Refresh error: {e}")
+        return format_response(error=str(e))
 # ============================================
 # Country Risk
 # ============================================
@@ -448,21 +504,25 @@ async def get_country_risk():
 @app.get("/trends/prices")
 async def get_price_trends(days: int = 14):
     try:
+        # Calculate date range
+        from datetime import datetime, timedelta
+        cutoff_date = (datetime.now() - timedelta(days=days)).isoformat()
+        
         result = supabase.table("price_history") \
             .select("*") \
+            .gte("recorded_date", cutoff_date) \
             .order("recorded_date", desc=True) \
-            .limit(days * 10) \
+            .limit(days * 20) \
             .execute()
-
+        
         if not result.data:
-            # Return empty data with message
             return format_response({
                 "trends": {},
                 "days": days,
                 "message": "No price history available yet. Data is being collected."
             })
 
-        # Process real data
+        # Process data
         trends = {}
         for item in result.data:
             commodity = item.get("commodity_name")
@@ -474,7 +534,7 @@ async def get_price_trends(days: int = 14):
                     "price": float(item.get("price_usd", 0))
                 })
 
-        # Sort and limit data
+        # Sort and limit per commodity
         for commodity in trends:
             trends[commodity].sort(key=lambda x: x["date"])
             trends[commodity] = trends[commodity][-days:]

@@ -28,11 +28,22 @@ async function logout() {
 async function safeFetch(url) {
     try {
         var response = await fetch(url);
-        if (!response.ok) return null;
+        if (!response.ok) {
+            console.warn('⚠️ HTTP error:', response.status, url);
+            return null;
+        }
         var result = await response.json();
-        return result.success ? result.data : null;
+        
+        // Handle both response formats:
+        // Format 1: { success: true, data: {...} }
+        // Format 2: { prices: [...], trends: {...} }
+        if (result.success !== undefined) {
+            return result.success ? result.data : null;
+        }
+        // If no success field, assume the whole response is the data
+        return result;
     } catch (error) {
-        console.error('Fetch error:', error);
+        console.error('Fetch error:', error, url);
         return null;
     }
 }
@@ -116,8 +127,21 @@ async function loadPrices() {
     if (!container) return;
 
     try {
+        console.log('🔍 Fetching prices from:', API_URL + '/prices/live-comprehensive');
         var data = await safeFetch(API_URL + '/prices/live-comprehensive');
-        allPrices = data?.prices || [];
+        console.log('📡 Raw price response:', data);
+        
+        if (data && data.prices) {
+            allPrices = data.prices;
+            console.log('✅ Loaded', allPrices.length, 'commodity prices');
+        } else if (data && Array.isArray(data)) {
+            allPrices = data;
+            console.log('✅ Loaded', allPrices.length, 'commodity prices (array format)');
+        } else {
+            console.warn('⚠️ No prices found in response:', data);
+            allPrices = [];
+        }
+        
         displayPrices();
     } catch (e) {
         console.error('Price load error:', e);
@@ -357,34 +381,69 @@ async function loadTrends(days) {
         var existingOverlay = ctx1.parentElement.querySelector('.no-data-overlay');
         if (existingOverlay) existingOverlay.remove();
 
-        var allDates = {};
-        var commodities = Object.keys(priceTrends);
-        var colors = window.CONFIG.COLORS.chart;
-        var datasets = [];
-        var currentYear = new Date().getFullYear();
+       // Build date-aligned datasets
+var allDates = {};
+var commodities = Object.keys(priceTrends);
+var colors = window.CONFIG.COLORS.chart;
+var datasets = [];
+var currentYear = new Date().getFullYear();
 
-        for (var i = 0; i < commodities.length; i++) {
-            var commodity = commodities[i];
-            var prices = priceTrends[commodity] || [];
-            if (prices.length > 0) {
-                for (var p = 0; p < prices.length; p++) {
-                    allDates[prices[p].date] = true;
-                }
-                var priceValues = [];
-                for (var p2 = 0; p2 < prices.length; p2++) {
-                    priceValues.push(prices[p2].price);
-                }
-                datasets.push({
-                    label: commodity,
-                    data: priceValues,
-                    borderColor: colors[i % colors.length],
-                    fill: false,
-                    tension: 0.3,
-                    pointRadius: 3,
-                    pointHoverRadius: 5
-                });
-            }
+// First, collect all unique dates
+for (var i = 0; i < commodities.length; i++) {
+    var commodity = commodities[i];
+    var prices = priceTrends[commodity] || [];
+    for (var p = 0; p < prices.length; p++) {
+        allDates[prices[p].date] = true;
+    }
+}
+
+var sortedDates = Object.keys(allDates).sort();
+
+// Build datasets with aligned dates
+for (var i = 0; i < commodities.length; i++) {
+    var commodity = commodities[i];
+    var prices = priceTrends[commodity] || [];
+    
+    // Create a map of date -> price for this commodity
+    var priceMap = {};
+    for (var p = 0; p < prices.length; p++) {
+        priceMap[prices[p].date] = prices[p].price;
+    }
+    
+    // Build aligned data array
+    var alignedData = [];
+    for (var d = 0; d < sortedDates.length; d++) {
+        var date = sortedDates[d];
+        if (priceMap[date] !== undefined) {
+            alignedData.push(priceMap[date]);
+        } else {
+            // Use null for missing dates (Chart.js will skip)
+            alignedData.push(null);
         }
+    }
+    
+    // Only add if there's at least some data
+    var hasData = false;
+    for (var d = 0; d < alignedData.length; d++) {
+        if (alignedData[d] !== null) {
+            hasData = true;
+            break;
+        }
+    }
+    
+    if (hasData) {
+        datasets.push({
+            label: commodity,
+            data: alignedData,
+            borderColor: colors[i % colors.length],
+            fill: false,
+            tension: 0.3,
+            pointRadius: 2,
+            pointHoverRadius: 5,
+            spanGaps: true  // This connects gaps with lines
+        });
+    }
+}
 
         var sortedDates = Object.keys(allDates).sort();
 
