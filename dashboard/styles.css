@@ -338,3 +338,23 @@ body {
     .stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
     .logout-btn { float: none; margin-top: 10px; }
 }
+/* ============================================
+   RISK LAYOUT - Pie Chart + Country List
+   ============================================ */
+.risk-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-top: 10px;
+}
+
+.risk-layout canvas {
+    max-height: 250px !important;
+    width: 100% !important;
+}
+
+@media (max-width: 600px) {
+    .risk-layout {
+        grid-template-columns: 1fr !important;
+    }
+}

@@ -32,40 +32,68 @@
     <div class="container">
         <div id="lastUpdated" class="last-updated">Loading data...</div>
 
-        <!-- Stats Grid -->
+        <!-- ========================================== -->
+        <!-- STATS GRID - 5 columns -->
+        <!-- ========================================== -->
         <div class="stats-grid">
-            <div class="stat-card"><div class="stat-number" id="totalEvents">-</div><div class="stat-label">Total Events</div></div>
-            <div class="stat-card"><div class="stat-number" id="warEvents">-</div><div class="stat-label">War Events</div></div>
-            <div class="stat-card"><div class="stat-number" id="disasterEvents">-</div><div class="stat-label">Disasters</div></div>
-            <div class="stat-card"><div class="stat-number" id="recCount">-</div><div class="stat-label">Active Recs</div></div>
-            <div class="stat-card"><div class="stat-number" id="shippingCount">-</div><div class="stat-label">Route Issues</div></div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalEvents">-</div>
+                <div class="stat-label">Total Events</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="warEvents">-</div>
+                <div class="stat-label">War Events</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="disasterEvents">-</div>
+                <div class="stat-label">Disasters</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="recCount">-</div>
+                <div class="stat-label">Active Recs</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="shippingCount">-</div>
+                <div class="stat-label">Route Issues</div>
+            </div>
         </div>
+        <!-- END STATS GRID -->
 
-        <!-- Three Columns -->
+        <!-- ========================================== -->
+        <!-- THREE COLUMNS - Weather | Shipping | Prices -->
+        <!-- ========================================== -->
         <div class="three-columns">
+            <!-- Weather Column -->
             <div class="card">
                 <h3>🌤️ Weather Alerts</h3>
                 <div id="weatherContainer" class="scrollable">Loading...</div>
             </div>
+            <!-- Shipping Column -->
             <div class="card">
                 <h3>🚢 Shipping Disruptions</h3>
                 <div id="shippingContainer" class="scrollable">Loading...</div>
             </div>
-   <div class="card">
-    <h3>💰 Commodity Prices</h3>
-    <div id="pricesContainer" class="scrollable">Loading...</div>
-    <div style="display: flex; gap: 10px; margin-top: 10px;">
-        <button id="showMorePrices" onclick="loadMorePrices()" style="padding: 6px 12px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; display: none;">
-            Show More
-        </button>
-        <button onclick="refreshPrices()" style="padding: 6px 12px; background: #22c55e; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px;">
-            🔄 Refresh Prices
-        </button>
-    </div>
-</div>
+            <!-- Prices Column -->
+            <div class="card">
+                <h3>💰 Commodity Prices</h3>
+                <div id="pricesContainer" class="scrollable">Loading...</div>
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button id="showMorePrices" onclick="loadMorePrices()" style="padding: 6px 12px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; display: none;">
+                        Show More
+                    </button>
+                    <button onclick="refreshPrices()" style="padding: 6px 12px; background: #22c55e; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px;">
+                        🔄 Refresh Prices
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- END THREE COLUMNS -->
 
-        <!-- Charts - Two Columns -->
+        <!-- ========================================== -->
+        <!-- TWO COLUMNS - Price Trends | Risk Trends -->
+        <!-- ========================================== -->
         <div class="two-columns">
+            <!-- Price Trends -->
             <div class="chart-card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                     <h3>📈 Commodity Price Trends</h3>
@@ -76,24 +104,35 @@
                         <option value="90">90 Days</option>
                     </select>
                 </div>
-                <canvas id="priceTrendChart" style="max-height: 250px; width: 100%;"></canvas>
+                <canvas id="priceTrendChart"></canvas>
             </div>
+            <!-- Risk Trends -->
             <div class="chart-card">
                 <h3>⚠️ Risk Score Trends</h3>
-                <canvas id="riskTrendChart" style="max-height: 250px; width: 100%;"></canvas>
+                <canvas id="riskTrendChart"></canvas>
             </div>
         </div>
+        <!-- END TWO COLUMNS -->
 
-        <!-- Country Risk -->
+        <!-- ========================================== -->
+        <!-- COUNTRY RISK - Pie Chart + List -->
+        <!-- ========================================== -->
         <div class="chart-card">
             <h3>🌍 Country Risk Distribution</h3>
-            <div class="two-columns" style="gap: 15px; margin-bottom: 0;">
-                <canvas id="riskPieChart" style="max-height: 200px;"></canvas>
-                <div id="countryRiskContainer" class="risk-grid" style="max-height: 200px; overflow-y: auto;">Loading...</div>
+            <div class="risk-layout">
+                <div>
+                    <canvas id="riskPieChart"></canvas>
+                </div>
+                <div>
+                    <div id="countryRiskContainer" class="risk-grid" style="max-height: 200px; overflow-y: auto;">Loading...</div>
+                </div>
             </div>
         </div>
+        <!-- END COUNTRY RISK -->
 
-        <!-- Data Export -->
+        <!-- ========================================== -->
+        <!-- DATA EXPORT -->
+        <!-- ========================================== -->
         <div class="card" style="margin-top: 20px;">
             <h3>📥 Data Export</h3>
             <div class="export-buttons">
@@ -105,8 +144,11 @@
             </div>
             <div id="exportStatus" style="margin-top: 8px; font-size: 12px; color: #6b7280;"></div>
         </div>
+        <!-- END DATA EXPORT -->
 
-        <!-- Disclaimer -->
+        <!-- ========================================== -->
+        <!-- DISCLAIMER -->
+        <!-- ========================================== -->
         <div class="disclaimer">
             <strong>⚠️ Data Quality & Disclaimer Notice</strong>
             <ul>
@@ -118,8 +160,11 @@
                 <li><strong>Transparency:</strong> All data displayed includes source attribution. Users can verify data sources independently.</li>
             </ul>
         </div>
+        <!-- END DISCLAIMER -->
 
-        <!-- Footer -->
+        <!-- ========================================== -->
+        <!-- FOOTER -->
+        <!-- ========================================== -->
         <div style="text-align: center; padding: 20px; margin-top: 30px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #6b7280;">
             <p>&copy; 2026 Athena SCIP. All rights reserved.</p>
             <p style="margin-top: 5px;">
@@ -130,7 +175,10 @@
                 Data sourced from: BBC, CNN, NPR, Al Jazeera, USGS, NOAA, Open-Meteo, Yahoo Finance
             </p>
         </div>
+        <!-- END FOOTER -->
+
     </div>
+    <!-- END CONTAINER -->
 
     <!-- External JavaScript - ORDER MATTERS! -->
     <script src="config.js"></script>
