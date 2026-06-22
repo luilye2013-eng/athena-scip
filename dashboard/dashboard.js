@@ -321,25 +321,64 @@ async function loadTrends(days) {
         if (Object.keys(priceTrends).length === 0) {
             if (window.priceChart) window.priceChart.destroy();
             window.priceChart = new Chart(ctx1, {
-                type: 'line',
-                data: {
-                    labels: ['No Data'],
-                    datasets: [{
-                        label: 'Price data unavailable',
-                        data: [0],
-                        borderColor: '#ccc',
-                        backgroundColor: 'rgba(204, 204, 204, 0.2)',
-                        fill: true,
-                        pointRadius: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    plugins: { legend: { display: false } },
-                    scales: { y: { display: false }, x: { display: false } }
+    type: 'line',
+    data: {
+        labels: formattedDates,
+        datasets: datasets
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: {
+                position: 'top',
+                labels: {
+                    font: { size: 9 },
+                    boxWidth: 12,
+                    padding: 8
                 }
-            });
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    font: { size: 8 },
+                    maxTicksLimit: 6,
+                    callback: function(value) {
+                        if (value >= 1000) {
+                            return '$' + (value / 1000).toFixed(0) + 'k';
+                        }
+                        return '$' + value.toFixed(0);
+                    }
+                },
+                title: {
+                    display: true,
+                    text: 'Price (USD)',
+                    font: { size: 9 }
+                }
+            },
+            x: {
+                ticks: {
+                    font: { size: 7 },
+                    maxRotation: 45,
+                    minRotation: 0,
+                    autoSkip: true,
+                    maxTicksLimit: 10
+                }
+            }
+        },
+        // Prevent chart from expanding
+        layout: {
+            padding: {
+                left: 5,
+                right: 5,
+                top: 5,
+                bottom: 5
+            }
+        }
+    }
+});
             
             var overlay = ctx1.parentElement.querySelector('.no-data-overlay');
             if (!overlay) {

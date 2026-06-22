@@ -154,6 +154,7 @@ body {
     border-radius: 14px;
     padding: 16px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
 }
 
 .card h3 {
@@ -170,12 +171,31 @@ body {
     border-radius: 14px;
     padding: 16px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
 }
 
 .chart-card h3 {
     font-size: 15px;
     margin-bottom: 12px;
     color: #2c4a6e;
+}
+
+/* ============================================
+   CHART CONSTRAINTS
+   ============================================ */
+.chart-card canvas {
+    max-height: 250px !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    height: auto !important;
+    display: block;
+}
+
+.chart-card .chart-wrapper {
+    position: relative;
+    width: 100%;
+    max-height: 250px;
+    overflow: hidden;
 }
 
 /* ============================================
@@ -414,25 +434,24 @@ body {
 }
 
 /* ============================================
-   CANVAS (Charts)
-   ============================================ */
-canvas {
-    max-height: 250px;
-    width: 100%;
-}
-
-/* ============================================
    DISCLAIMER
    ============================================ */
 .disclaimer {
     background: #fef3c7;
-    color: #92400e;
     border-left: 4px solid #f59e0b;
-    padding: 10px 15px;
-    margin-top: 20px;
+    padding: 15px;
     border-radius: 8px;
+    margin-top: 20px;
+    text-align: left;
+}
+
+.disclaimer ul {
     font-size: 11px;
-    text-align: center;
+    color: #92400e;
+    margin-top: 8px;
+    padding-left: 20px;
+    line-height: 1.6;
+    text-align: left;
 }
 
 /* ============================================
@@ -443,7 +462,6 @@ canvas {
     .two-columns {
         grid-template-columns: 1fr;
     }
-
     .stats-grid {
         grid-template-columns: repeat(3, 1fr);
     }
@@ -453,11 +471,9 @@ canvas {
     .stats-grid {
         grid-template-columns: repeat(2, 1fr);
     }
-
     .header h1 {
         font-size: 1.2rem;
     }
-
     .logout-btn {
         float: none;
         margin-top: 10px;
