@@ -9,8 +9,6 @@
     <link rel="stylesheet" href="styles.css">
     
     <!-- External JS -->
-    <script src="config.js"></script>
-    <script src="utils.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 </head>
@@ -27,7 +25,7 @@
             <a href="recommendations.html" class="nav-btn">💡 Recommendations</a>
             <a href="events.html" class="nav-btn">📰 Events</a>
             <a href="analytics.html" class="nav-btn">📊 Analytics</a>
-	    <a href="quality.html" class="nav-btn">📊 Quality</a>
+            <a href="quality.html" class="nav-btn">📊 Quality</a>
         </div>
     </div>
 
@@ -53,47 +51,43 @@
                 <h3>🚢 Shipping Disruptions</h3>
                 <div id="shippingContainer" class="scrollable">Loading...</div>
             </div>
-  <div class="card">
-    <h3>💰 Commodity Prices</h3>
-    <div id="pricesContainer" class="scrollable">Loading...</div>
-    <div><button id="showMorePrices" onclick="loadMorePrices()" style="margin-top: 10px; padding: 6px 12px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; display: none;">
-        Show More
-    </button>
-</div>
+            <div class="card">
+                <h3>💰 Commodity Prices</h3>
+                <div id="pricesContainer" class="scrollable">Loading...</div>
+                <button id="showMorePrices" onclick="loadMorePrices()" style="margin-top: 10px; padding: 6px 12px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; display: none;">
+                    Show More
+                </button>
+            </div>
         </div>
 
-        <!-- Charts -->
-  <div class="two-columns">
-    <div class="chart-card">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <h3>📈 Commodity Price Trends</h3>
-            <select id="trendPeriod" style="padding: 4px 8px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 12px;">
-                <option value="7">7 Days</option>
-                <option value="14" selected>14 Days</option>
-                <option value="30">30 Days</option>
-                <option value="90">90 Days</option>
-            </select>
+        <!-- Charts - Two Columns -->
+        <div class="two-columns">
+            <div class="chart-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h3>📈 Commodity Price Trends</h3>
+                    <select id="trendPeriod" style="padding: 4px 8px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 12px;">
+                        <option value="7">7 Days</option>
+                        <option value="14" selected>14 Days</option>
+                        <option value="30">30 Days</option>
+                        <option value="90">90 Days</option>
+                    </select>
+                </div>
+                <canvas id="priceTrendChart" style="max-height: 250px; width: 100%;"></canvas>
+            </div>
+            <div class="chart-card">
+                <h3>⚠️ Risk Score Trends</h3>
+                <canvas id="riskTrendChart" style="max-height: 250px; width: 100%;"></canvas>
+            </div>
         </div>
-        <div style="position: relative; width: 100%; overflow: hidden;">
-            <canvas id="priceTrendChart" style="max-height: 250px; width: 100%;"></canvas>
-        </div>
-    </div>
-    <div class="chart-card">
-        <h3>⚠️ Risk Score Trends</h3>
-        <div style="position: relative; width: 100%; overflow: hidden;">
-            <canvas id="riskTrendChart" style="max-height: 250px; width: 100%;"></canvas>
-        </div>
-    </div>
-</div>
 
-  	<!-- Country Risk -->
-	<div class="chart-card">
-   	 <h3>🌍 Country Risk Distribution</h3>
-    	<div class="two-columns" style="gap: 15px; margin-bottom: 0;">
-    	    <canvas id="riskPieChart" style="max-height: 200px;"></canvas>
-        <div id="countryRiskContainer" class="risk-grid" style="max-height: 200px; overflow-y: auto;">	Loading...</div>
-    </div>
-</div>
+        <!-- Country Risk -->
+        <div class="chart-card">
+            <h3>🌍 Country Risk Distribution</h3>
+            <div class="two-columns" style="gap: 15px; margin-bottom: 0;">
+                <canvas id="riskPieChart" style="max-height: 200px;"></canvas>
+                <div id="countryRiskContainer" class="risk-grid" style="max-height: 200px; overflow-y: auto;">Loading...</div>
+            </div>
+        </div>
 
         <!-- Data Export -->
         <div class="card" style="margin-top: 20px;">
@@ -109,37 +103,36 @@
         </div>
 
         <!-- Disclaimer -->
-<div class="disclaimer" style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; border-radius: 8px; margin-top: 20px; text-align: left;">
-    <strong>⚠️ Data Quality & Disclaimer Notice</strong>
-    <ul style="font-size: 11px; color: #92400e; margin-top: 8px; padding-left: 20px; line-height: 1.6; text-align: left;">
-        <li><strong>Data Sources:</strong> This platform aggregates data from third-party RSS feeds (BBC, CNN, NPR, Al Jazeera), USGS (earthquakes), NOAA (weather alerts), and Open-Meteo (global weather).</li>
-        <li><strong>Commodity Prices:</strong> Prices are sourced from Yahoo Finance. <span style="color: #dc2626;">If live prices are unavailable, the system will display a clear message rather than showing inaccurate data.</span></li>
-        <li><strong>Data Quality:</strong> Location data may be incomplete or inferred from event descriptions. Events classified as "Unknown" or "Other" type have been flagged for review.</li>
-        <li><strong>Purpose:</strong> This platform provides informational analysis and is NOT a substitute for professional supply chain risk assessment or decision-making.</li>
-        <li><strong>Liability:</strong> Athena SCIP and its developers assume no liability for decisions made based on this data. Users should independently verify all critical information.</li>
-        <li><strong>Transparency:</strong> All data displayed includes source attribution. Users can verify data sources independently.</li>
-    </ul>
-</div>
+        <div class="disclaimer">
+            <strong>⚠️ Data Quality & Disclaimer Notice</strong>
+            <ul>
+                <li><strong>Data Sources:</strong> This platform aggregates data from third-party RSS feeds (BBC, CNN, NPR, Al Jazeera), USGS (earthquakes), NOAA (weather alerts), and Open-Meteo (global weather).</li>
+                <li><strong>Commodity Prices:</strong> Prices are sourced from Yahoo Finance. <span style="color: #dc2626;">If live prices are unavailable, the system will display a clear message rather than showing inaccurate data.</span></li>
+                <li><strong>Data Quality:</strong> Location data may be incomplete or inferred from event descriptions. Events classified as "Unknown" or "Other" type have been flagged for review.</li>
+                <li><strong>Purpose:</strong> This platform provides informational analysis and is NOT a substitute for professional supply chain risk assessment or decision-making.</li>
+                <li><strong>Liability:</strong> Athena SCIP and its developers assume no liability for decisions made based on this data. Users should independently verify all critical information.</li>
+                <li><strong>Transparency:</strong> All data displayed includes source attribution. Users can verify data sources independently.</li>
+            </ul>
+        </div>
+
+        <!-- Footer -->
+        <div style="text-align: center; padding: 20px; margin-top: 30px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #6b7280;">
+            <p>&copy; 2026 Athena SCIP. All rights reserved.</p>
+            <p style="margin-top: 5px;">
+                <a href="privacy.html" style="color: #3b82f6; text-decoration: none;">Privacy Policy</a> |
+                <a href="terms.html" style="color: #3b82f6; text-decoration: none;">Terms of Use</a>
+            </p>
+            <p style="margin-top: 5px; font-size: 10px; color: #9ca3af;">
+                Data sourced from: BBC, CNN, NPR, Al Jazeera, USGS, NOAA, Open-Meteo, Yahoo Finance
+            </p>
+        </div>
+    </div>
 
     <!-- External JavaScript - ORDER MATTERS! -->
     <script src="config.js"></script>
     <script src="utils.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="supabase-client.js"></script>
     <script src="dashboard.js"></script>
-
-
-<!-- Footer -->
-<div style="text-align: center; padding: 20px; margin-top: 30px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #6b7280;">
-    <p>&copy; 2026 Athena SCIP. All rights reserved.</p>
-    <p style="margin-top: 5px;">
-        <a href="privacy.html" style="color: #3b82f6; text-decoration: none;">Privacy Policy</a> |
-        <a href="terms.html" style="color: #3b82f6; text-decoration: none;">Terms of Use</a>
-    </p>
-    <p style="margin-top: 5px; font-size: 10px; color: #9ca3af;">
-        Data sourced from: BBC, CNN, NPR, Al Jazeera, USGS, NOAA, Open-Meteo, Yahoo Finance
-    </p>
-</div>
 </body>
 </html>
