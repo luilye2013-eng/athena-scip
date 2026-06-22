@@ -460,32 +460,38 @@ async function loadRiskTrends(days) {
 
         var riskTrends = riskData?.trends || {};
 
+        var ctx2 = document.getElementById('riskTrendChart');
+        if (!ctx2) return;
+
+        // Handle no data
         if (Object.keys(riskTrends).length === 0) {
-            console.warn('⚠️ No risk trend data available from API');
-            var ctx2 = document.getElementById('riskTrendChart');
-            if (ctx2) {
-                if (window.riskChart) window.riskChart.destroy();
-                window.riskChart = new Chart(ctx2, {
-                    type: 'line',
-                    data: {
-                        labels: ['No Data'],
-                        datasets: [{
-                            label: 'No risk data available',
-                            data: [0],
-                            borderColor: '#ccc',
-                            fill: false
-                        }]
+            if (window.riskChart) window.riskChart.destroy();
+            window.riskChart = new Chart(ctx2, {
+                type: 'line',
+                data: {
+                    labels: ['No Data'],
+                    datasets: [{
+                        label: 'No risk data available',
+                        data: [0],
+                        borderColor: '#ccc',
+                        fill: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: { position: 'top', labels: { font: { size: 10 } } }
                     },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: true,
-                        plugins: {
-                            legend: { position: 'top', labels: { font: { size: 10 } } }
-                        },
-                        scales: { y: { min: 0, max: 100 } }
+                    scales: { 
+                        y: { 
+                            min: 0, 
+                            max: 100,
+                            ticks: { stepSize: 10 }
+                        } 
                     }
-                });
-            }
+                }
+            });
             return;
         }
 
@@ -493,6 +499,7 @@ async function loadRiskTrends(days) {
         var riskColors = ['#dc2626', '#f97316', '#eab308', '#2c4a6e', '#8b5cf6', '#ec4899'];
         var allRiskDates = {};
         var riskDatasets = [];
+        var currentYear = new Date().getFullYear();
 
         for (var i = 0; i < countries.length; i++) {
             var country = countries[i];
@@ -503,7 +510,9 @@ async function loadRiskTrends(days) {
                 }
                 var riskValues = [];
                 for (var r2 = 0; r2 < risks.length; r2++) {
-                    riskValues.push(risks[r2].risk);
+                    // Ensure risk values are capped at 100
+                    var riskVal = Math.min(100, Math.max(0, risks[r2].risk || 0));
+                    riskValues.push(riskVal);
                 }
                 riskDatasets.push({
                     label: country,
@@ -519,34 +528,56 @@ async function loadRiskTrends(days) {
 
         var sortedRiskDates = Object.keys(allRiskDates).sort();
 
-        var ctx2 = document.getElementById('riskTrendChart');
-        if (ctx2) {
-            if (window.riskChart) window.riskChart.destroy();
-            var formattedRiskDates = [];
-            for (var d = 0; d < sortedRiskDates.length; d++) {
-                var dateObj = new Date(sortedRiskDates[d]);
-                formattedRiskDates.push(dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
-            }
-            window.riskChart = new Chart(ctx2, {
-                type: 'line',
-                data: {
-                    labels: formattedRiskDates,
-                    datasets: riskDatasets
+        if (window.riskChart) window.riskChart.destroy();
+        var formattedRiskDates = [];
+        for (var d = 0; d < sortedRiskDates.length; d++) {
+            var dateObj = new Date(sortedRiskDates[d]);
+            var dateYear = dateObj.getFullYear();
+            var formatOptions = dateYear === currentYear 
+                ? { month: 'short', day: 'numeric' } 
+                : { month: 'short', day: 'numeric', year: 'numeric' };
+            formattedRiskDates.push(dateObj.toLocaleDateString('en-US', formatOptions));
+        }
+
+        window.riskChart = new Chart(ctx2, {
+            type: 'line',
+            data: {
+                labels: formattedRiskDates,
+                datasets: riskDatasets
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: { font: { size: 10 } }
+                    }
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                            labels: { font: { size: 10 } }
+                scales: {
+                    y: {
+                        min: 0,
+                        max: 100,
+                        ticks: {
+                            stepSize: 10,
+                            font: { size: 9 },
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Risk Score',
+                            font: { size: 10 }
                         }
                     },
-                    scales: { y: { min: 0, max: 100 } }
+                    x: {
+                        ticks: { font: { size: 9 } }
+                    }
                 }
-            });
-            console.log('✅ Risk chart updated with real data');
-        }
+            }
+        });
+        console.log('✅ Risk chart updated with real data (0-100 scale)');
 
     } catch (e) {
         console.error('Risk trend error:', e);
