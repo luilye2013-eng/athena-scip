@@ -766,16 +766,14 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Refresh button
+    var refreshBtn = document.querySelector('[onclick="refreshPrices()"]');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', refreshPrices);
+    }
+
     checkAuth().then(function() {
         loadAll();
         setInterval(loadAll, 60000);
     });
 });
-
-function refreshPrices() {
-    console.log('🔄 Refreshing prices...');
-    loadPrices();
-    var trendPeriod = document.getElementById('trendPeriod');
-    var days = trendPeriod ? parseInt(trendPeriod.value) : 14;
-    loadTrends(days);
-}
