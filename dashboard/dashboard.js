@@ -313,11 +313,11 @@ async function loadTrends(days) {
         console.log('📊 Price trend data:', priceData);
 
         var priceTrends = priceData?.trends || {};
-        var message = priceData?.message || '';
 
         var ctx1 = document.getElementById('priceTrendChart');
         if (!ctx1) return;
 
+        // Handle no data
         if (Object.keys(priceTrends).length === 0) {
             if (window.priceChart) window.priceChart.destroy();
             window.priceChart = new Chart(ctx1, {
@@ -336,20 +336,8 @@ async function loadTrends(days) {
                 options: {
                     responsive: true,
                     maintainAspectRatio: true,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            callbacks: {
-                                label: function() {
-                                    return 'No price data available. Data is being collected.';
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        y: { display: false },
-                        x: { display: false }
-                    }
+                    plugins: { legend: { display: false } },
+                    scales: { y: { display: false }, x: { display: false } }
                 }
             });
             
@@ -370,9 +358,29 @@ async function loadTrends(days) {
         var existingOverlay = ctx1.parentElement.querySelector('.no-data-overlay');
         if (existingOverlay) existingOverlay.remove();
 
-        var allDates = {};
-        var commodities = Object.keys(priceTrends);
+        // Get all commodities and limit to 5 most relevant
+        var allCommodities = Object.keys(priceTrends);
+        
+        // Calculate price range for each commodity and sort by max price
+        var commodityRanges = [];
+        for (var c = 0; c < allCommodities.length; c++) {
+            var commodity = allCommodities[c];
+            var prices = priceTrends[commodity] || [];
+            var maxPrice = 0;
+            for (var p = 0; p < prices.length; p++) {
+                if (prices[p].price > maxPrice) maxPrice = prices[p].price;
+            }
+            commodityRanges.push({ name: commodity, maxPrice: maxPrice });
+        }
+        // Sort by max price descending, then take top 5
+        commodityRanges.sort(function(a, b) { return b.maxPrice - a.maxPrice; });
+        var commodities = [];
+        for (var c = 0; c < Math.min(5, commodityRanges.length); c++) {
+            commodities.push(commodityRanges[c].name);
+        }
+
         var colors = window.CONFIG.COLORS.chart;
+        var allDates = {};
         var datasets = [];
         var currentYear = new Date().getFullYear();
 
@@ -425,59 +433,44 @@ async function loadTrends(days) {
                     legend: {
                         position: 'top',
                         labels: {
-                            font: { size: 10 },
+                            font: { size: 9 },
                             boxWidth: 12,
-                            padding: 10
-                        }
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return context.dataset.label + ': $' + context.parsed.y.toFixed(2);
-                            }
+                            padding: 8
                         }
                     }
                 },
                 scales: {
                     y: {
-                        beginAtZero: false,
+                        beginAtZero: true,
                         ticks: {
-                            font: { size: 9 },
+                            font: { size: 8 },
+                            maxTicksLimit: 6,
                             callback: function(value) {
+                                if (value >= 1000) {
+                                    return '$' + (value / 1000).toFixed(0) + 'k';
+                                }
                                 return '$' + value.toFixed(0);
                             }
                         },
                         title: {
                             display: true,
                             text: 'Price (USD)',
-                            font: { size: 10 }
+                            font: { size: 9 }
                         }
                     },
                     x: {
                         ticks: {
-                            font: { size: 8 },
+                            font: { size: 7 },
                             maxRotation: 45,
                             minRotation: 0,
                             autoSkip: true,
-                            maxTicksLimit: 12,
-                            sampleSize: 10
-                        },
-                        grid: {
-                            display: false
+                            maxTicksLimit: 10
                         }
-                    }
-                },
-                layout: {
-                    padding: {
-                        left: 5,
-                        right: 5,
-                        top: 5,
-                        bottom: 5
                     }
                 }
             }
         });
-        console.log('✅ Price chart updated with real data');
+        console.log('✅ Price chart updated with top 5 commodities');
 
         await loadRiskTrends(days);
 
@@ -485,6 +478,7 @@ async function loadTrends(days) {
         console.error('Trend error:', e);
     }
 }
+
 async function loadRiskTrends(days) {
     if (days === undefined) days = 14;
     try {
