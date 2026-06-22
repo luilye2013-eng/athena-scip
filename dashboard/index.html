@@ -66,24 +66,28 @@
         </div>
 
         <!-- Charts -->
-        <div class="two-columns">
-            <div class="chart-card">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                    <h3>📈 Commodity Price Trends</h3>
-                    <select id="trendPeriod" style="padding: 4px 8px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 12px;">
-                        <option value="7">7 Days</option>
-                        <option value="14" selected>14 Days</option>
-                        <option value="30">30 Days</option>
-                        <option value="90">90 Days</option>
-                    </select>
-                </div>
-                <canvas id="priceTrendChart"></canvas>
-            </div>
-            <div class="chart-card">
-                <h3>⚠️ Risk Score Trends</h3>
-                <canvas id="riskTrendChart"></canvas>
-            </div>
+  <div class="two-columns">
+    <div class="chart-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h3>📈 Commodity Price Trends</h3>
+            <select id="trendPeriod" style="padding: 4px 8px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 12px;">
+                <option value="7">7 Days</option>
+                <option value="14" selected>14 Days</option>
+                <option value="30">30 Days</option>
+                <option value="90">90 Days</option>
+            </select>
         </div>
+        <div style="position: relative; width: 100%; overflow: hidden;">
+            <canvas id="priceTrendChart" style="max-height: 250px; width: 100%;"></canvas>
+        </div>
+    </div>
+    <div class="chart-card">
+        <h3>⚠️ Risk Score Trends</h3>
+        <div style="position: relative; width: 100%; overflow: hidden;">
+            <canvas id="riskTrendChart" style="max-height: 250px; width: 100%;"></canvas>
+        </div>
+    </div>
+</div>
 
   	<!-- Country Risk -->
 	<div class="chart-card">

@@ -324,36 +324,70 @@ async function loadTrends(days) {
             window.priceChart = new Chart(ctx1, {
                 type: 'line',
                 data: {
-                    labels: ['No Data'],
-                    datasets: [{
-                        label: 'Price data unavailable',
-                        data: [0],
-                        borderColor: '#ccc',
-                        backgroundColor: 'rgba(204, 204, 204, 0.2)',
-                        fill: true,
-                        pointRadius: 0
-                    }]
+                    labels: formattedDates,
+                    datasets: datasets
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            callbacks: {
-                                label: function() {
-                                    return 'No price data available. Data is being collected.';
+		options:{
+		   responsive:true,
+		   maintainAspectRatio:true,
+		   plugins:{
+			legend:{
+			    position:'top',
+			    labels:{
+				font:{size:10},
+				boxwidth:12,
+				padding:10
+			      }
+			   },       
+                       	   
+                
+                tooltip: {
+                    callbacks: {
+                    	label: function(context){
+                    	    return context.dataset.label + ': $' + context.parsed.y.toFixed(2);
                                 }
                             }
                         }
                     },
-                    scales: {
-                        y: { display: false },
-                        x: { display: false }
+                                    scales: {
+                    y: {
+                        beginAtZero: false,
+                        ticks: { 
+                            font: { size: 9 },
+                            callback: function(value) {
+                                return '$' + value.toFixed(0);
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Price (USD)',
+                            font: { size: 10 }
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            font: { size: 8 },
+                            maxRotation: 45,
+                            minRotation: 0,
+                            autoSkip: true,
+                            maxTicksLimit: 12,
+                            sampleSize: 10
+                        },
+                        grid: {
+                            display: false
+                        }
+                    }
+                },
+                layout: {
+                    padding: {
+                        left: 5,
+                        right: 5,
+                        top: 5,
+                        bottom: 5
                     }
                 }
-            });
-            
+            }
+        });
             // Add overlay message
             var overlay = ctx1.parentElement.querySelector('.no-data-overlay');
             if (!overlay) {
@@ -551,7 +585,15 @@ async function loadRiskTrends(days) {
                 plugins: {
                     legend: {
                         position: 'top',
-                        labels: { font: { size: 10 } }
+                        labels: { font: { size: 10 }, boxwidth:12, padding:10 }
+                    }
+                },
+		tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': ' + context.parsed.y + '%';
+                            }
+                        }
                     }
                 },
                 scales: {
@@ -572,11 +614,24 @@ async function loadRiskTrends(days) {
                         }
                     },
                     x: {
-                        ticks: { font: { size: 9 } }
-                    }
+                        ticks: { font: { size: 9 }, maxRotation:45, minRotation:0, autoSkip:true, maxTicksLimit:12, sampleSize:10 },
+                    grid:{
+			display:false
                 }
             }
-        });
+        },
+	//Prevent chart from expanding beyond container
+	layout: {
+	    padding:{
+		left: 5,
+		right:5,
+		top:5,
+		bottom:5
+	     }
+	 }
+      }
+   });
+			
         console.log('✅ Risk chart updated with real data (0-100 scale)');
 
     } catch (e) {
