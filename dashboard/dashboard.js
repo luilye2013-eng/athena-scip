@@ -145,19 +145,8 @@ function displayPrices() {
     var container = document.getElementById('pricesContainer');
     if (!container) return;
 
-    var prices = allPrices.slice(0, priceDisplayLimit);
-    var showMoreBtn = document.getElementById('showMorePrices');
-
-    if (allPrices.length > priceDisplayLimit) {
-        if (showMoreBtn) {
-            showMoreBtn.style.display = 'inline-block';
-            showMoreBtn.textContent = 'Show More (' + (allPrices.length - priceDisplayLimit) + ' remaining)';
-        }
-    } else {
-        if (showMoreBtn) showMoreBtn.style.display = 'none';
-    }
-
-    if (!prices || prices.length === 0) {
+    // Check if we have prices
+    if (!window.allPrices || window.allPrices.length === 0) {
         container.innerHTML = `
             <div style="text-align: center; padding: 20px; color: #6b7280;">
                 <p>📊 No commodity prices available</p>
@@ -167,13 +156,24 @@ function displayPrices() {
         return;
     }
 
+    var prices = window.allPrices.slice(0, priceDisplayLimit);
+    var showMoreBtn = document.getElementById('showMorePrices');
+
+    if (window.allPrices.length > priceDisplayLimit) {
+        if (showMoreBtn) {
+            showMoreBtn.style.display = 'inline-block';
+            showMoreBtn.textContent = 'Show More (' + (window.allPrices.length - priceDisplayLimit) + ' remaining)';
+        }
+    } else {
+        if (showMoreBtn) showMoreBtn.style.display = 'none';
+    }
+
     var html = '';
     for (var p = 0; p < prices.length; p++) {
         var item = prices[p];
         var change = item.change_24h || 0;
         var changeSymbol = change > 0 ? '▲' : (change < 0 ? '▼' : '●');
         var color = change > 0 ? '#10b981' : (change < 0 ? '#dc2626' : '#6b7280');
-        var source = item.source || 'Unknown';
         html += '<div class="price-item">';
         html += '<strong>' + item.commodity_name + '</strong>';
         html += '<span>$' + item.price_usd + '</span>';
@@ -182,9 +182,14 @@ function displayPrices() {
         html += '</div>';
     }
 
-    // Single, clear source attribution
-    var dataSource = allPrices[0]?.source || 'Unknown';
-    var isLive = dataSource.includes('Live') || dataSource.includes('Yahoo');
+    // Determine data source
+    var dataSource = 'Unknown';
+    var isLive = false;
+    if (window.allPrices.length > 0 && window.allPrices[0].source) {
+        dataSource = window.allPrices[0].source;
+        isLive = dataSource.includes('Live') || dataSource.includes('Yahoo');
+    }
+    
     var sourceIcon = isLive ? '✅' : '📊';
     var sourceNote = isLive ? ' (Live data)' : ' (Reference data - may not reflect current market)';
     
@@ -196,10 +201,15 @@ function displayPrices() {
 
     container.innerHTML = html;
 }
-
 function loadMorePrices() {
     priceDisplayLimit += 12;
     displayPrices();
+}
+
+function refreshPrices() {
+    console.log('🔄 Refreshing prices...');
+    loadPrices();
+    loadTrends(parseInt(document.getElementById('trendPeriod').value));
 }
 
 async function loadStats() {
@@ -237,6 +247,7 @@ async function loadStats() {
 }
 
 async function loadCountryRisk() {
+    async function loadCountryRisk() {
     var container = document.getElementById('countryRiskContainer');
     if (!container) return;
 
@@ -252,6 +263,7 @@ async function loadCountryRisk() {
             return;
         }
 
+        // Update the risk grid
         var gridHtml = '<div class="risk-grid">';
         var riskLabels = [];
         var riskScores = [];
@@ -266,14 +278,20 @@ async function loadCountryRisk() {
         gridHtml += '</div>';
         container.innerHTML = gridHtml;
 
+        // Pie chart - with proper destroy check to prevent flickering
         var ctx = document.getElementById('riskPieChart');
         if (ctx) {
-            if (window.riskPieChart && typeof window.riskPieChart.destroy === 'function') {
-                window.riskPieChart.destroy();
-            } else if (window.riskPieChart) {
-                delete window.riskPieChart;
+            // Properly destroy existing chart
+            if (window.riskPieChart) {
+                try {
+                    window.riskPieChart.destroy();
+                } catch (e) {
+                    console.warn('Chart destroy warning:', e);
+                }
+                window.riskPieChart = null;
             }
 
+            // Create new chart
             try {
                 window.riskPieChart = new Chart(ctx, {
                     type: 'pie',
@@ -281,7 +299,7 @@ async function loadCountryRisk() {
                         labels: riskLabels,
                         datasets: [{
                             data: riskScores,
-                            backgroundColor: window.CONFIG.COLORS.chart
+                            backgroundColor: ['#dc2626', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899', '#14b8a6', '#f59e0b', '#6366f1', '#06b6d4', '#84cc16']
                         }]
                     },
                     options: {
@@ -290,7 +308,11 @@ async function loadCountryRisk() {
                         plugins: {
                             legend: {
                                 position: 'bottom',
-                                labels: { font: { size: 10 } }
+                                labels: { 
+                                    font: { size: 9 },
+                                    boxWidth: 10,
+                                    padding: 8
+                                }
                             }
                         }
                     }
@@ -305,7 +327,6 @@ async function loadCountryRisk() {
         container.innerHTML = '<p>Risk data unavailable</p>';
     }
 }
-
 async function loadTrends(days) {
     if (days === undefined) days = 14;
     try {

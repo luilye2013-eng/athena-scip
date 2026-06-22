@@ -51,14 +51,18 @@
                 <h3>🚢 Shipping Disruptions</h3>
                 <div id="shippingContainer" class="scrollable">Loading...</div>
             </div>
-            <div class="card">
-                <h3>💰 Commodity Prices</h3>
-                <div id="pricesContainer" class="scrollable">Loading...</div>
-                <button id="showMorePrices" onclick="loadMorePrices()" style="margin-top: 10px; padding: 6px 12px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; display: none;">
-                    Show More
-                </button>
-            </div>
-        </div>
+   <div class="card">
+    <h3>💰 Commodity Prices</h3>
+    <div id="pricesContainer" class="scrollable">Loading...</div>
+    <div style="display: flex; gap: 10px; margin-top: 10px;">
+        <button id="showMorePrices" onclick="loadMorePrices()" style="padding: 6px 12px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; display: none;">
+            Show More
+        </button>
+        <button onclick="refreshPrices()" style="padding: 6px 12px; background: #22c55e; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px;">
+            🔄 Refresh Prices
+        </button>
+    </div>
+</div>
 
         <!-- Charts - Two Columns -->
         <div class="two-columns">
