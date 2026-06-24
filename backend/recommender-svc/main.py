@@ -167,13 +167,15 @@ def generate_recommendations():
 
     # Get events that don't have recommendations yet
     try:
-        events = supabase.table("events") \
-            .select("*") \
-            .is_("has_recommendation", "null") \
-            .gte("severity", 2) \
-            .order("created_at", desc=True) \
-            .limit(50) \
-            .execute()
+        # Get events that don't have recommendations yet
+	# Check for both NULL and FALSE to handle all cases
+	events = supabase.table("events") \
+        .select("*") \
+        .or_("has_recommendation.is.null,has_recommendation.eq.false") \
+        .gte("severity", 2) \
+        .order("created_at", desc=True) \
+        .limit(50) \
+        .execute()
         
         logger.info(f"📋 Found {len(events.data)} events needing recommendations")
     except Exception as e:
