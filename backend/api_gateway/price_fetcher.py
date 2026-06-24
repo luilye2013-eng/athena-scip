@@ -15,40 +15,17 @@ logger = logging.getLogger(__name__)
 # ============================================
 
 # Yahoo Finance ticker mapping - verified working tickers
-# Yahoo Finance ticker mapping - verified working tickers
 YAHOO_TICKERS = {
-    # Energy
     "Crude Oil": "CL=F",
     "Natural Gas": "NG=F",
-    "Gasoline": "RB=F",
-    "Brent Oil": "BZ=F",
-    
-    # Precious Metals
     "Gold": "GC=F",
     "Silver": "SI=F",
-    "Platinum": "PL=F",
-    "Palladium": "PA=F",
-    
-    # Base Metals
     "Copper": "HG=F",
-    "Steel": "SLX",
-    "Iron Ore": "VALE",
-    
-    # Agriculture
     "Wheat": "ZW=F",
     "Corn": "ZC=F",
     "Soybeans": "ZS=F",
-    "Coffee": "KC=F",
-    "Sugar": "SB=F",
-    "Cocoa": "CC=F",
-    "Cotton": "CT=F",
-    "Lumber": "LB=F",
-    
-    # Specialty
-    "Lithium": "LIT",
-    "Semiconductors": "SOXX",
-    "Uranium": "URA",
 }
+
 # Live-Rates.com symbols
 LIVE_RATES_SYMBOLS = {
     "Crude Oil": "WTI",
@@ -58,7 +35,6 @@ LIVE_RATES_SYMBOLS = {
     "Natural Gas": "NG",
 }
 
-# Reference prices from IMF Primary Commodity Markets
 # Reference prices from IMF Primary Commodity Markets - COMPLETE LIST
 REFERENCE_PRICES = {
     # Energy
@@ -66,13 +42,13 @@ REFERENCE_PRICES = {
     "Natural Gas": 3.28,
     "Gasoline": 2.45,
     "Brent Oil": 81.20,
-    
+
     # Precious Metals
     "Gold": 2020.00,
     "Silver": 28.50,
     "Platinum": 980.00,
     "Palladium": 1050.00,
-    
+
     # Base Metals
     "Copper": 4.70,
     "Aluminum": 1.15,
@@ -81,7 +57,7 @@ REFERENCE_PRICES = {
     "Lead": 0.95,
     "Steel": 847.50,
     "Iron Ore": 117.20,
-    
+
     # Agriculture
     "Wheat": 249.00,
     "Corn": 198.00,
@@ -93,7 +69,7 @@ REFERENCE_PRICES = {
     "Cotton": 0.85,
     "Lumber": 520.00,
     "Livestock": 185.00,
-    
+
     # Specialty
     "Lithium": 14750.00,
     "Cobalt": 28500.00,
@@ -101,6 +77,7 @@ REFERENCE_PRICES = {
     "Semiconductors": 1248.00,
     "Uranium": 92.00,
 }
+
 # ============================================
 # YAHOO FINANCE
 # ============================================
@@ -178,7 +155,7 @@ async def fetch_commodity_prices() -> Dict[str, Any]:
     """Fetch commodity prices from multiple sources."""
     all_prices = []
     sources_used = []
-    
+
     # 1. Try Live-Rates.com first
     logger.info("📡 Trying Live-Rates.com...")
     live_rates_prices = await fetch_from_live_rates()
@@ -186,7 +163,7 @@ async def fetch_commodity_prices() -> Dict[str, Any]:
         all_prices.extend(live_rates_prices)
         sources_used.append("Live-Rates.com")
         logger.info(f"✅ Live-Rates.com returned {len(live_rates_prices)} prices")
-    
+
     # 2. Try Yahoo Finance (sync - run in thread pool)
     if len(all_prices) < 8:  # Only try Yahoo if we need more
         logger.info("📡 Trying Yahoo Finance...")
@@ -206,31 +183,29 @@ async def fetch_commodity_prices() -> Dict[str, Any]:
                     logger.info(f"✅ Yahoo returned {len(yahoo_prices)} prices")
         except Exception as e:
             logger.warning(f"⚠️ Yahoo error: {e}")
-    
-    # 3. Fill missing commodities with reference prices
-    existing_names = {p["commodity_name"] for p in all_prices}
-                    # ALWAYS include ALL reference prices (not just missing ones)
-        # This ensures all commodities appear in the dashboard
-        for name, price in REFERENCE_PRICES.items():
-            # Check if already in list (avoid duplicates)
-            exists = False
-            for p in all_prices:
-                if p["commodity_name"] == name:
-                    exists = True
-                    break
-            if not exists:
-                all_prices.append({
-                    "commodity_name": name,
-                    "price_usd": price,
-                    "unit": "per unit",
-                    "change_24h": 0.0,
-                    "source": "IMF Reference",
-                    "data_type": "reference"
-                })
-                logger.info(f"📊 Adding reference price for {name}: ${price}")
-    
-    logger.info(f"💰 Total {len(all_prices)} prices from sources: {sources_used}")
-    
+
+    # 3. ALWAYS include ALL reference prices
+    # This ensures all commodities appear in the dashboard
+    for name, price in REFERENCE_PRICES.items():
+        # Check if already in list (avoid duplicates)
+        exists = False
+        for p in all_prices:
+            if p["commodity_name"] == name:
+                exists = True
+                break
+        if not exists:
+            all_prices.append({
+                "commodity_name": name,
+                "price_usd": price,
+                "unit": "per unit",
+                "change_24h": 0.0,
+                "source": "IMF Reference",
+                "data_type": "reference"
+            })
+            logger.info(f"📊 Adding reference price for {name}: ${price}")
+
+    logger.info(f"💰 Total {len(all_prices)} prices from sources: {sources_used if sources_used else 'IMF Reference'}")
+
     return {
         "prices": all_prices,
         "source": sources_used[0] if sources_used else "IMF Reference",
