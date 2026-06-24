@@ -6,7 +6,6 @@ import logging
 import os
 import csv
 import io
-import aiohttp
 import asyncio
 from datetime import datetime
 from typing import Optional
@@ -371,36 +370,24 @@ async def get_live_prices():
 async def get_live_prices_comprehensive():
     """
     Get commodity prices with clear source labeling.
-    Tries multiple sources, falls back to reference prices.
+    Returns ALL commodities with reference prices if live data unavailable.
     """
-    # Try to fetch from multiple sources
     result = await fetch_commodity_prices()
     
     if result["prices"] and len(result["prices"]) > 0:
         return format_response({
             "prices": result["prices"],
             "count": result["count"],
-            "data_source": result["source"] + " (Live)",
+            "data_source": result["source"] + (" (Live)" if result["source"] != "IMF Reference" else " (Reference)"),
             "message": f"Prices fetched from {result['source']}"
         })
     
-    # Fallback: Use reference prices with clear labeling
-    reference_prices = []
-    for name, data in REFERENCE_PRICES.items():
-        reference_prices.append({
-            "commodity_name": name,
-            "price_usd": data["price"],
-            "unit": data["unit"],
-            "change_24h": 0.0,
-            "source": data["source"],
-            "data_type": "reference"
-        })
-    
+    # If still no prices, return empty
     return format_response({
-        "prices": reference_prices,
-        "count": len(reference_prices),
-        "data_source": "IMF Reference Prices",
-        "message": "Live prices unavailable - showing reference prices from IMF Primary Commodity Markets"
+        "prices": [],
+        "count": 0,
+        "data_source": "Unavailable",
+        "message": "No commodity prices available"
     })
 
 @app.post("/prices/refresh")

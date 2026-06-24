@@ -15,17 +15,40 @@ logger = logging.getLogger(__name__)
 # ============================================
 
 # Yahoo Finance ticker mapping - verified working tickers
+# Yahoo Finance ticker mapping - verified working tickers
 YAHOO_TICKERS = {
+    # Energy
     "Crude Oil": "CL=F",
     "Natural Gas": "NG=F",
+    "Gasoline": "RB=F",
+    "Brent Oil": "BZ=F",
+    
+    # Precious Metals
     "Gold": "GC=F",
     "Silver": "SI=F",
+    "Platinum": "PL=F",
+    "Palladium": "PA=F",
+    
+    # Base Metals
     "Copper": "HG=F",
+    "Steel": "SLX",
+    "Iron Ore": "VALE",
+    
+    # Agriculture
     "Wheat": "ZW=F",
     "Corn": "ZC=F",
     "Soybeans": "ZS=F",
+    "Coffee": "KC=F",
+    "Sugar": "SB=F",
+    "Cocoa": "CC=F",
+    "Cotton": "CT=F",
+    "Lumber": "LB=F",
+    
+    # Specialty
+    "Lithium": "LIT",
+    "Semiconductors": "SOXX",
+    "Uranium": "URA",
 }
-
 # Live-Rates.com symbols
 LIVE_RATES_SYMBOLS = {
     "Crude Oil": "WTI",
@@ -36,25 +59,48 @@ LIVE_RATES_SYMBOLS = {
 }
 
 # Reference prices from IMF Primary Commodity Markets
+# Reference prices from IMF Primary Commodity Markets - COMPLETE LIST
 REFERENCE_PRICES = {
+    # Energy
     "Crude Oil": 77.50,
     "Natural Gas": 3.28,
+    "Gasoline": 2.45,
+    "Brent Oil": 81.20,
+    
+    # Precious Metals
     "Gold": 2020.00,
     "Silver": 28.50,
+    "Platinum": 980.00,
+    "Palladium": 1050.00,
+    
+    # Base Metals
     "Copper": 4.70,
+    "Aluminum": 1.15,
+    "Zinc": 1.35,
+    "Nickel": 7.25,
+    "Lead": 0.95,
+    "Steel": 847.50,
+    "Iron Ore": 117.20,
+    
+    # Agriculture
     "Wheat": 249.00,
     "Corn": 198.00,
     "Soybeans": 425.00,
-    "Steel": 847.50,
-    "Iron Ore": 117.20,
+    "Rice": 16.50,
+    "Coffee": 195.00,
+    "Sugar": 22.00,
+    "Cocoa": 2800.00,
+    "Cotton": 0.85,
+    "Lumber": 520.00,
+    "Livestock": 185.00,
+    
+    # Specialty
     "Lithium": 14750.00,
-    "Nickel": 18450.00,
+    "Cobalt": 28500.00,
+    "Rare Earth": 150.00,
     "Semiconductors": 1248.00,
-    "Aluminum": 1.15,
-    "Zinc": 1.35,
-    "Lead": 0.95,
+    "Uranium": 92.00,
 }
-
 # ============================================
 # YAHOO FINANCE
 # ============================================
@@ -164,6 +210,11 @@ async def fetch_commodity_prices() -> Dict[str, Any]:
     # 3. Fill missing commodities with reference prices
     existing_names = {p["commodity_name"] for p in all_prices}
     for name, price in REFERENCE_PRICES.items():
+	exists = False
+        for p in all_prices:
+            if p["commodity_name"] == name:
+                exists = True
+                break
         if name not in existing_names:
             all_prices.append({
                 "commodity_name": name,
