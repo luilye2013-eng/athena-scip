@@ -166,17 +166,16 @@ def generate_recommendations():
     logger.info(f"🏢 Using organization: {org_id}")
 
     # Get events that don't have recommendations yet
+    # Check for both NULL and FALSE
     try:
-        # Get events that don't have recommendations yet
-	# Check for both NULL and FALSE to handle all cases
-	events = supabase.table("events") \
-        .select("*") \
-        .or_("has_recommendation.is.null,has_recommendation.eq.false") \
-        .gte("severity", 2) \
-        .order("created_at", desc=True) \
-        .limit(50) \
-        .execute()
-        
+        events = supabase.table("events") \
+            .select("*") \
+            .or_("has_recommendation.is.null,has_recommendation.eq.false") \
+            .gte("severity", 2) \
+            .order("created_at", desc=True) \
+            .limit(50) \
+            .execute()
+
         logger.info(f"📋 Found {len(events.data)} events needing recommendations")
     except Exception as e:
         logger.error(f"❌ Error fetching events: {e}")
@@ -188,6 +187,7 @@ def generate_recommendations():
 
     count = 0
     for event in events.data:
+        # ... rest of the function remains the same
         event_id = event.get("id")
         event_type = event.get("event_type", "other")
         severity = event.get("severity", 2)
