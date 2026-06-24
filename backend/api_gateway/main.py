@@ -18,7 +18,7 @@ from supabase import create_client, Client
 import yfinance as yf
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 import httpx
-from backend.commodities import FALLBACK_PRICES
+from commodities import FALLBACK_PRICES
 from price_fetcher import fetch_commodity_prices, REFERENCE_PRICES
 from price_fetcher import fetch_commodity_prices
 
