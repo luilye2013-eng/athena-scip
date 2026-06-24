@@ -115,38 +115,43 @@ def fetch_from_yahoo_sync():
 async def fetch_from_live_rates():
     """Fetch commodity prices from Live-Rates.com"""
     try:
-        url = "https://www.live-rates.com/rates"
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url, timeout=10) as response:
-                if response.status == 200:
-                    data = await response.json()
-                    prices = []
-                    for name, symbol in LIVE_RATES_SYMBOLS.items():
-                        for item in data:
-                            if item.get('symbol') == symbol:
-                                price = item.get('rate')
-                                if price and price > 0:
-                                    prices.append({
-                                        "commodity_name": name,
-                                        "price_usd": round(price, 2),
-                                        "unit": "per unit",
-                                        "change_24h": item.get('change', 0),
-                                        "source": "Live-Rates.com",
-                                        "data_type": "live"
-                                    })
-                                    logger.info(f"💰 Live-Rates: {name} = ${price:.2f}")
-                                break
-                    return prices if prices else None
-                else:
-                    logger.warning(f"⚠️ Live-Rates.com returned status: {response.status}")
-                    return None
-    except asyncio.TimeoutError:
-        logger.warning("⚠️ Live-Rates.com timeout")
+        # Try different endpoints
+        endpoints = [
+            "https://www.live-rates.com/rates",
+            "https://www.live-rates.com/api/rates",
+            "https://live-rates.com/rates"
+        ]
+        
+        for url in endpoints:
+            try:
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(url, timeout=10) as response:
+                        if response.status == 200:
+                            data = await response.json()
+                            prices = []
+                            for name, symbol in LIVE_RATES_SYMBOLS.items():
+                                for item in data:
+                                    if item.get('symbol') == symbol:
+                                        price = item.get('rate')
+                                        if price and price > 0:
+                                            prices.append({
+                                                "commodity_name": name,
+                                                "price_usd": round(price, 2),
+                                                "unit": "per unit",
+                                                "change_24h": item.get('change', 0),
+                                                "source": "Live-Rates.com",
+                                                "data_type": "live"
+                                            })
+                                            logger.info(f"💰 Live-Rates: {name} = ${price:.2f}")
+                                        break
+                            return prices if prices else None
+            except Exception as e:
+                logger.warning(f"⚠️ Endpoint {url} failed: {e}")
+                continue
         return None
     except Exception as e:
         logger.error(f"❌ Live-Rates.com error: {e}")
         return None
-
 # ============================================
 # MAIN FETCH FUNCTION
 # ============================================
