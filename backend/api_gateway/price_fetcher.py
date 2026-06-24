@@ -209,22 +209,25 @@ async def fetch_commodity_prices() -> Dict[str, Any]:
     
     # 3. Fill missing commodities with reference prices
     existing_names = {p["commodity_name"] for p in all_prices}
-    for name, price in REFERENCE_PRICES.items():
-	exists = False
-        for p in all_prices:
-            if p["commodity_name"] == name:
-                exists = True
-                break
-        if name not in existing_names:
-            all_prices.append({
-                "commodity_name": name,
-                "price_usd": price,
-                "unit": "per unit",
-                "change_24h": 0.0,
-                "source": "IMF Reference",
-                "data_type": "reference"
-            })
-            logger.info(f"📊 Using reference price for {name}: ${price}")
+                    # ALWAYS include ALL reference prices (not just missing ones)
+        # This ensures all commodities appear in the dashboard
+        for name, price in REFERENCE_PRICES.items():
+            # Check if already in list (avoid duplicates)
+            exists = False
+            for p in all_prices:
+                if p["commodity_name"] == name:
+                    exists = True
+                    break
+            if not exists:
+                all_prices.append({
+                    "commodity_name": name,
+                    "price_usd": price,
+                    "unit": "per unit",
+                    "change_24h": 0.0,
+                    "source": "IMF Reference",
+                    "data_type": "reference"
+                })
+                logger.info(f"📊 Adding reference price for {name}: ${price}")
     
     logger.info(f"💰 Total {len(all_prices)} prices from sources: {sources_used}")
     
